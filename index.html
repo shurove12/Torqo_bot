@@ -142,6 +142,9 @@ input,select{width:100%;padding:12px;border:1px solid var(--bd);border-radius:14
 </defs></svg>
 
 <script>
+// ---- on-screen error bar (diagnostics)
+function showErr(m){try{let d=document.getElementById("errbar");if(!d){d=document.createElement("div");d.id="errbar";d.style.cssText="position:fixed;top:0;left:0;right:0;background:#b3261e;color:#fff;padding:8px 12px;font-size:12px;z-index:999;word-break:break-all";document.body.appendChild(d)}d.textContent="Error: "+m}catch(x){}}
+window.addEventListener("error",e=>showErr(e.message));window.addEventListener("unhandledrejection",e=>showErr((e.reason&&(e.reason.code||"")+" "+(e.reason.message||e.reason))||"promise error"));
 // ========== FIREBASE CONFIG ==========
 const FB={
   apiKey:"AIzaSyCNXLyiMGeF_jv1xG3W8veEB0L5iuxkzpE",
@@ -260,7 +263,7 @@ function renderDm(){const e=$("dm");if(!e)return;$("dseg").innerHTML=seg(dreg,"d
  e.innerHTML=L.length?L.map(([m,i])=>`<div class="wmc ${dmi==i?"sel":""}" onclick="dmi=${i};renderDm()">${m.img?`<img src="${m.img}" width="36" height="36" style="border-radius:8px;object-fit:cover"/>`:""}<div><b>${esc(m.name)}</b><div class="mute">${m.code?esc(m.code)+" · ":""}Min $${f(m.min||1)}</div></div></div>`).join(""):'<div class="mute">No method available in this region yet.</div>';
  const m=dms[dmi],di=$("dinfo");if(!m||reg(m)!=dreg){di.style.display="none";$("bd_info").style.display="none";$("dbd").style.display="none";$("deta").textContent="";return}
  const bd=reg(m)=="Bangladesh";di.style.display="block";
- di.innerHTML=`<div class="mute">Send payment to${m.code?" ("+esc(m.code)+")":""}</div><div style="font-size:17px;font-weight:700;word-break:break-all;margin:4px 0">${esc(m.num||"-")}</div><div class="mute" style="white-space:pre-wrap">${esc(m.note||"")}</div>${m.num?`<button class="w" style="margin-top:8px;padding:8px" onclick="cpd(${dmi})">Copy</button>`:""}`;
+ di.innerHTML=`<div class="mute">Send payment to${m.code?" ("+esc(m.code)+")":""}</div><div style="font-size:18px;font-weight:700;word-break:break-all;margin:4px 0">${esc(m.num||"-")}</div>${m.num?`<button class="w" style="margin-top:6px;padding:8px" onclick="cpd(${dmi})">Copy</button>`:""}${m.note?`<div style="border-top:1px solid var(--line);margin:12px 0"></div><div style="font-weight:700;margin-bottom:4px">How to send money</div><div class="mute" style="white-space:pre-wrap;font-size:13px;line-height:1.55">${esc(m.note)}</div>`:""}`;
  $("bd_info").style.display=bd?"block":"none";$("dbd").style.display=bd?"block":"none";$("dshl").textContent=bd?"Payment screenshot (required)":"Payment screenshot (optional)";$("deta").textContent=m.eta?"Processing time: "+m.eta:"";$("bdt_rate").textContent=cfg.bdtRate||120;calcBdt()}
 function cpd(i){navigator.clipboard&&navigator.clipboard.writeText(dms[i].num);SND.ok();toast("Copied")}
 function calcBdt(){$("bdt_pay").textContent=((+$("damt").value||0)*(cfg.bdtRate||120)).toFixed(0)}
