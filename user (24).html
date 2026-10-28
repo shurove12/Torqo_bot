@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Torqo - Car Mining</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<style>
+:root{--bg:#f4f8fc;--card:#fff;--ink:#0f1f2e;--mute:#566878;--blue:#0a56a8;--bl:#e1effc;--bd:#b9d2ea;--gr:#e2f4e7;--line:#dfe6ee}
+*{box-sizing:border-box;margin:0;font-family:'Plus Jakarta Sans',sans-serif;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--ink);padding:16px 12px 100px;max-width:560px;margin:auto;font-size:14px}
+h1{font-size:24px;font-weight:800;} h2{font-size:20px;font-weight:800;margin:20px 0 12px} h3{font-size:16px;font-weight:700;margin:16px 0 8px} h4{font-size:15px;font-weight:700;margin:6px 0 2px}
+.mute{color:var(--mute);font-size:12px}.sm{font-size:12px}.row{display:flex;justify-content:space-between;align-items:center}
+.ic{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;vertical-align:middle}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:14px;margin-bottom:10px}
+.hd{display:flex;justify-content:space-between;align-items:center}.hd h1{display:flex;align-items:center;gap:8px;font-size:20px}
+.pb{width:38px;height:38px;border-radius:50%;border:1px solid var(--bd);background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.bal .big{font-size:36px;font-weight:800;letter-spacing:-.02em}.big small{font-size:14px;font-weight:600;color:var(--mute)}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;border:1px solid var(--line);background:#fff;font-weight:600;font-size:14px;cursor:pointer}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.stat{padding:14px}.stat b{display:block;font-size:22px;color:var(--blue);margin-top:6px;font-weight:700}
+.car{padding:10px 10px 14px}.img{height:110px;border-radius:14px;margin:8px 0;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center}
+.car .v{font-size:15px;font-weight:700;margin-top:4px}.price{font-size:22px;font-weight:800;margin:8px 0 10px}
+button{width:100%;padding:12px;border-radius:99px;border:1px solid var(--bd);background:var(--bl);color:#0a3d78;font-weight:600;font-size:15px;cursor:pointer}
+button.w{background:#fff;border-color:var(--line);color:var(--ink)} button:disabled{opacity:.5}
+.bar{height:6px;border-radius:6px;background:#e6edf4;margin:8px 0}.bar i{display:block;height:100%;border-radius:6px;background:var(--blue)}
+nav{position:fixed;left:50%;transform:translateX(-50%);width:calc(100% - 24px);max-width:536px;bottom:12px;background:var(--gr);border:1px solid var(--bd);border-radius:24px;display:flex;padding:6px;gap:4px;z-index:5}
+nav a{flex:1;text-align:center;padding:8px 0;border-radius:18px;font-size:12px;color:#2f5a43;border:1px solid transparent;cursor:pointer}
+nav a.on{background:var(--bl);border-color:var(--bd);color:#0a3d78} nav a .ic{display:block;margin:0 auto 2px}
+.pg{display:none}.pg.on{display:block}.crumb{display:flex;gap:8px;align-items:center;color:var(--mute);font-size:13px}
+.tri{display:flex;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:16px 0}.tri div{flex:1;text-align:center;padding:14px 0;border-left:1px solid var(--line)}.tri div:first-child{border:0}.tri b{display:block;font-size:20px}.tri span{color:var(--mute);font-size:12px}
+.tabs{display:flex;gap:8px;margin-bottom:10px}.tabs a{padding:8px 16px;border-radius:99px;background:#fff;color:var(--blue);font-weight:600;font-size:14px;cursor:pointer}.tabs a.on{background:var(--blue);color:#fff}
+.ov{position:fixed;inset:0;background:rgba(15,31,46,.4);backdrop-filter:blur(4px);display:none;align-items:flex-end;justify-content:center;z-index:20}.ov.on{display:flex}
+.sheet{width:100%;max-width:560px;background:#fff;border-radius:30px 30px 0 0;padding:16px 16px calc(20px + env(safe-area-inset-bottom,0px));animation:up .3s ease-out}@keyframes up{from{transform:translateY(50px);opacity:0}}
+.hdl{width:40px;height:4px;border-radius:4px;background:#dfe7ef;margin:0 auto 16px}.xb{width:36px;height:36px;border-radius:50%;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.avail{background:var(--gr);border-radius:20px;padding:16px;margin:16px 0}.avail .l{letter-spacing:.1em;font-size:12px;color:#2f5a43;font-weight:600}.avail .big{color:#0a3a22;margin:4px 0 8px;font-size:32px}
+.wt{display:flex;gap:10px;margin-top:10px}.wt button{flex:1;padding:16px;text-align:left;border-radius:20px}
+.info{display:flex;gap:10px;background:#e9eef6;border:1px solid var(--line);border-radius:16px;padding:14px;margin-top:12px;font-size:12px}
+input,select{width:100%;padding:12px;border:1px solid var(--bd);border-radius:14px;font-size:14px;margin:6px 0}
+.wmc{display:flex;gap:10px;align-items:center;margin:8px 0;cursor:pointer;padding:10px;border:1px solid var(--line);border-radius:14px}.wmc.sel{border:2px solid var(--blue);background:var(--bl)}
+.avt{width:70px;height:70px;border-radius:50%;margin:auto;background:var(--bl);color:var(--blue);display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;background-size:cover;background-position:center}
+#toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:20px;display:none;z-index:99;font-size:13px}
+#evtBanner{display:none;background:linear-gradient(135deg,#0a56a8,#3b9dff);color:#fff;padding:12px;border-radius:14px;margin-bottom:10px;font-weight:700;text-align:center}
+.seg{display:flex;gap:8px;margin:8px 0}.seg a{flex:1;text-align:center;padding:10px;border-radius:14px;background:#fff;border:1px solid var(--line);color:var(--blue);font-weight:700;cursor:pointer}.seg a.on{background:var(--blue);color:#fff}input[type=file]{padding:9px;font-size:13px}
+</style></head><body>
+<div id="toast"></div>
+<div id="evtBanner"></div>
+
+<section class="pg on" id="p-miners">
+ <div class="hd"><div><h1><span id="lg"><svg class="ic"><use href="#i-car"/></svg></span> TORQO</h1><div class="mute">CAR MINING</div></div>
+  <div class="pb" onclick="openP()"><svg class="ic"><use href="#i-user"/></svg></div></div>
+ <div class="card bal"><div class="row"><div><div class="mute">YOUR BALANCE</div><div class="big">$<span id="bal">0.00</span> <small>USD</small></div></div><svg class="ic" style="width:40px;height:40px;color:#3b4b5b"><use href="#i-wallet"/></svg></div><hr style="border:0;border-top:1px solid var(--line);margin:10px 0">
+  <div class="row"><span style="display:flex;gap:6px;align-items:center;font-size:14px"><svg class="ic"><use href="#i-clock"/></svg><span id="rate">$0.00 / day</span></span>
+  <span class="pill" onclick="collect()"><svg class="ic"><use href="#i-refresh"/></svg> Collect</span></div></div>
+ <h2>Car collection</h2>
+ <div class="grid"><div class="card stat"><span class="mute">Active Miners</span><b id="s1">0</b></div><div class="card stat"><span class="mute">Total Packages</span><b id="s2">10</b></div>
+  <div class="card stat"><span class="mute">Daily Income</span><b id="s3">$0</b></div><div class="card stat"><span class="mute">Total Mining</span><b id="s4">$0</b></div></div>
+ <h3>My Miners</h3><div class="grid" id="mine"></div>
+ <h2 style="font-size:18px;display:flex;gap:6px;align-items:center"><svg class="ic" style="color:#1f6b45"><use href="#i-spark"/></svg>Choose your car miner</h2><div class="grid" id="shop"></div>
+</section>
+
+<section class="pg" id="p-tasks">
+ <div class="crumb"><svg class="ic"><use href="#i-list"/></svg>TORQO / REWARDS</div><h1 style="margin:16px 0 0;font-size:28px">Task hub</h1><button class="w" style="margin-top:10px" onclick="go('newtask')">+ Create task</button>
+ <div id="tasks" style="margin-top:10px"></div>
+</section>
+
+<section class="pg" id="p-friends">
+ <div style="text-align:center;margin-top:8px"><div class="avt" id="favt"></div><h1 id="fname" style="font-size:20px;margin-top:10px"></h1><div class="mute" id="fuser"></div></div>
+ <div class="grid" style="margin:16px 0"><div class="card stat"><span class="mute">Total referrals</span><b id="fr1">0</b></div><div class="card stat"><span class="mute">Referral earnings</span><b id="fr2">$0.00</b></div></div>
+ <div class="card"><div class="mute">Your referral link</div><div id="fcode" style="font-size:18px;font-weight:700;margin:6px 0;word-break:break-all"></div>
+ <div class="grid"><button onclick="share()" style="display:flex;gap:6px;align-items:center;justify-content:center"><svg class="ic"><use href="#i-share"/></svg>Share</button><button class="w" onclick="copyLink()" style="display:flex;gap:6px;align-items:center;justify-content:center"><svg class="ic"><use href="#i-copy"/></svg>Copy</button></div></div>
+ <h3>📞 Contact Admin</h3>
+ <div class="card"><button onclick="contactParvez()" style="display:flex;gap:6px;align-items:center;justify-content:center"><svg class="ic"><use href="#i-user"/></svg>Message Admin</button><button class="w" id="wab" style="display:none;margin-top:8px" onclick="contactWa()">WhatsApp</button></div>
+ <h3>Referral policy</h3><div class="card mute" id="fpol" style="white-space:pre-wrap;font-size:13px"></div>
+</section>
+
+<section class="pg" id="p-newtask"><div class="crumb" onclick="go('tasks')" style="cursor:pointer">← BACK</div><h1 style="margin:16px 0 6px;font-size:28px">Create task</h1><div class="mute">Cost = reward × users, deducted now (refunded if rejected)</div>
+ <input id="ntt" placeholder="Task title"/><input id="ntd" placeholder="Description"/><input id="ntu" placeholder="Task link (https://...)"/><input id="ntr" type="number" placeholder="Reward per user (USD)" oninput="calcT()"/><input id="nts" type="number" placeholder="Number of users" oninput="calcT()"/><div id="ntc" class="mute" style="margin:6px 0"></div><button onclick="submitTask()">Submit for review</button>
+</section>
+
+<section class="pg" id="p-deposit">
+ <div class="crumb" onclick="go('miners')" style="cursor:pointer">← BACK</div><h1 style="margin:16px 0 6px;font-size:28px">Deposit</h1>
+ <div class="seg" id="dseg"></div>
+ <h3>Payment method</h3><div id="dm"></div><div id="dinfo" class="card" style="display:none"></div>
+ <h3>Amount</h3><input id="damt" type="number" placeholder="Amount in USD" oninput="calcBdt()"/>
+ <div id="bd_info" style="display:none;margin:10px 0;padding:10px;background:var(--bl);border-radius:10px;font-size:13px">Rate: 1 USD = <b id="bdt_rate">120</b> BDT · You pay: ৳<b id="bdt_pay">0</b></div>
+ <div id="dbd" style="display:none"><input id="dsn" inputmode="tel" placeholder="Number you sent the money from"/></div>
+ <input id="dtx" placeholder="Transaction ID"/>
+ <div class="mute" id="dshl" style="margin-top:6px">Payment screenshot</div><input id="dsh" type="file" accept="image/*"/>
+ <div id="deta" class="mute" style="margin:6px 0"></div>
+ <button onclick="submitDeposit()" style="margin-top:6px">Submit deposit request</button>
+ <h3>History</h3><div id="dhist"></div>
+</section>
+
+<section class="pg" id="p-withdraw">
+ <div class="crumb" onclick="go('miners')" style="cursor:pointer">← BACK</div><h1 style="margin:16px 0 6px;font-size:28px">Withdraw</h1>
+ <div class="mute">Available: $<span id="bal3">0.00</span> · Min $<span id="minw">5</span></div>
+ <div class="seg" id="wseg"></div>
+ <h3>Choose method</h3><div id="wm"></div>
+ <input id="wamt" type="number" placeholder="Amount (USD)" oninput="calcW()"/><input id="waddr" placeholder="Account number / wallet address"/><div id="wnet" class="mute" style="margin:4px 0"></div><div id="weta" class="mute"></div>
+ <button onclick="withdraw()" style="margin-top:8px">Request withdrawal</button>
+ <h3>History</h3><div id="hist"></div>
+</section>
+
+<nav id="nav"></nav>
+
+<div class="ov" id="ov" onclick="if(event.target==this)closeW()"><div class="sheet"><div class="hdl"></div>
+ <div class="row"><div style="display:flex;gap:12px;align-items:center"><div class="pb" style="width:50px;height:50px;background:var(--gr);border-color:var(--gr);color:#1f4f36"><svg class="ic" style="width:24px;height:24px"><use href="#i-wallet"/></svg></div><div><div style="font-size:18px;font-weight:700">Wallet</div><div class="mute">Your Torqo treasury</div></div></div><div class="xb" onclick="closeW()"><svg class="ic"><use href="#i-x"/></svg></div></div>
+ <div class="avail"><div class="l">AVAILABLE BALANCE</div><div class="big">$<span id="bal2">0.00</span> <small>USD</small></div></div>
+ <div class="wt">
+   <button onclick="openDeposit()" style="background:#e2f4e7;border-color:#cfe6d6;color:#2f5a43"><svg class="ic"><use href="#i-down"/></svg> <b style="display:block;margin-top:4px">Top Up</b><span class="mute">Deposit funds</span></button>
+   <button onclick="openWd()" style="background:var(--bl);border-color:var(--bd);color:#0a3d78"><svg class="ic"><use href="#i-up"/></svg> <b style="display:block;margin-top:4px">Withdraw</b><span class="mute">To your wallet</span></button>
+ </div>
+ <div class="info"><svg class="ic" style="color:var(--blue);flex:none"><use href="#i-info"/></svg><div><b>Check before transfer</b><br>Ensure network and address match.</div></div>
+</div></div>
+
+<div class="ov" id="pov" onclick="if(event.target==this)this.classList.remove('on')"><div class="sheet"><div class="hdl"></div>
+ <div class="row"><div style="font-size:18px;font-weight:700">Profile</div><div class="xb" onclick="document.getElementById('pov').classList.remove('on')"><svg class="ic"><use href="#i-x"/></svg></div></div>
+ <div class="card" style="margin-top:16px"><h4 id="pn" style="margin:0"></h4><div class="mute" id="pu" style="margin:2px 0 12px"></div><div class="row"><span class="mute">Total mined</span><b id="pm"></b></div></div>
+ <div class="row" style="margin-top:6px"><span>Sound effects</span><span class="pill" id="sndb" onclick="togSnd()">On</span></div>
+</div></div>
+
+<div class="ov" id="wov"><div class="sheet" style="text-align:center"><div class="hdl"></div><div style="font-size:54px">🎁</div><h1 style="margin:6px 0">Welcome to Torqo!</h1><div class="mute">You received a free bonus</div><div style="font-size:40px;font-weight:800;color:var(--blue);margin:10px 0">$<span id="wb">1.00</span></div><div class="mute" style="margin-bottom:14px">Use it to activate your first car miner and start earning.</div><button onclick="document.getElementById('wov').classList.remove('on')">Start mining</button></div></div>
+
+<svg width="0" height="0" style="position:absolute"><defs>
+<symbol id="i-car" viewBox="0 0 24 24"><path d="M3 15v-3l2-5a2 2 0 0 1 2-1h10a2 2 0 0 1 2 1l2 5v3M3 15h18M3 15v2h3v-2M18 15v2h3v-2"/><circle cx="7.5" cy="15.5" r="1.2"/><circle cx="16.5" cy="15.5" r="1.2"/></symbol>
+<symbol id="i-list" viewBox="0 0 24 24"><path d="M3 6l2 2 3-3M3 13l2 2 3-3M12 7h9M12 14h9M3 20l2 2M12 21h9"/></symbol>
+<symbol id="i-wallet" viewBox="0 0 24 24"><path d="M4 7a2 2 0 0 1 2-2h12v3M4 7v11a2 2 0 0 0 2 2h13a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1H6a2 2 0 0 1-2-1z"/><path d="M16 14h4"/></symbol>
+<symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.5 3-6 6.5-6s6.5 2.5 6.5 6M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5c2 .6 3.5 2.5 3.5 5.5"/></symbol>
+<symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+<symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14-4L4 9M4 4v5h5M4 13a8 8 0 0 0 14 4l2-2M20 20v-5h-5"/></symbol>
+<symbol id="i-share" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.7 10.6l6.6-4M8.7 13.4l6.6 4"/></symbol>
+<symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h8"/></symbol>
+<symbol id="i-up" viewBox="0 0 24 24"><path d="M12 20V5M5 11l7-7 7 7M5 21h14"/></symbol>
+<symbol id="i-down" viewBox="0 0 24 24"><path d="M12 4v15M5 13l7 7 7-7M5 3h14"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+<symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8v.01"/></symbol>
+<symbol id="i-spark" viewBox="0 0 24 24"><path d="M10 3l1.8 5.2L17 10l-5.2 1.8L10 17l-1.8-5.2L3 10l5.2-1.8zM18 14l.9 2.1L21 17l-2.1.9L18 20l-.9-2.1L15 17l2.1-.9z"/></symbol>
+</defs></svg>
+
+<script>
+// ========== FIREBASE CONFIG ==========
+const FB={
+  apiKey:"AIzaSyCNXLyiMGeF_jv1xG3W8veEB0L5iuxkzpE",
+  authDomain:"torqo-ca24e.firebaseapp.com",
+  databaseURL:"https://torqo-ca24e-default-rtdb.firebaseio.com",
+  projectId:"torqo-ca24e",
+  storageBucket:"torqo-ca24e.firebasestorage.app",
+  messagingSenderId:"299073228282",
+  appId:"1:299073228282:web:776850ce06bd11437ea843",
+  measurementId:"G-EK3D7X8BP2"
+};
+const BOT="Torqo_bot";
+firebase.initializeApp(FB);
+const db=firebase.firestore();
+const tg=window.Telegram&&Telegram.WebApp;if(tg){tg.ready();tg.expand()}
+const tu=(tg&&tg.initDataUnsafe&&tg.initDataUnsafe.user)||{id:"demo",first_name:"Demo"};
+const uid=String(tu.id);const ref=db.collection("users").doc(uid);
+
+const DEF=[["Terragon","Compact · Silver","Common",1,.15,"#9aa3ad"],["Verdant","Sport Sedan · Green","Common",3,.5,"#1f4d33"],["Marina","Sport Coupe · Blue","Common",5,.9,"#1d4fb8"],["Frostveil","Luxury Sedan · White","Rare",10,2,"#8a97a5"],["Ember","SUV · Red","Rare",25,5,"#b3261e"],["Nocturne","Grand Tourer · Black","Rare",50,10,"#222"],["Voltaris","Supercar · Yellow","Epic",100,25,"#e6b800"],["Prisma","Exotic Coupe · Violet","Epic",200,50,"#7a3fb5"],["Solaris","Luxury GT · Gold","Legendary",300,80,"#c9a227"],["Eldrath","Hypercar · Orange","Legendary",500,150,"#e8630a"]];
+let miners=DEF.map((d,i)=>({id:i+1,name:d[0],type:d[1],tier:d[2],price:d[3],daily:d[4],days:30,color:d[5],img:""}));
+let me=null,cfg={welcomeBonus:1,minWithdraw:5,refBonus:.1,codePrefix:"TQ",refPolicy:"",limitUrl:"",logo:"",bdtRate:120,supportUser:"",whatsapp:"",eventText:""},tasks=[],wm=null,wms=[],dms=[],dmi=null,cur="miners",tf="Available",subs={};
+let dreg="Bangladesh",wreg="Bangladesh",isNew=false,pendW=false,AC;
+let SON=true;try{SON=localStorage.getItem("snd")!="0"}catch(e){}
+function ac(){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state=="suspended")AC.resume()}catch(e){}return AC}
+function tone(fr,d,ty,v,at){if(!SON)return;const c=ac();if(!c)return;const t=c.currentTime+(at||0),o=c.createOscillator(),g=c.createGain();o.type=ty||"sine";o.frequency.setValueAtTime(fr,t);g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v||.15,t+.01);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g);g.connect(c.destination);o.start(t);o.stop(t+d+.05)}
+const seq=(a,d,ty,v,g)=>a.forEach((x,i)=>tone(x,d,ty,v,i*g));
+const SND={tap:()=>tone(880,.05,"triangle",.06),nav:()=>seq([660,880],.08,"sine",.1,.06),
+welcome:()=>seq([523,659,784,1047,1319,1568],.4,"sine",.18,.11),
+buy:()=>{tone(260,.12,"square",.07);seq([392,523,659,784,1047],.28,"triangle",.16,.08)},
+wd:()=>seq([784,988,1175,988,1568],.22,"sine",.17,.09),dep:()=>seq([440,554,659,880],.22,"triangle",.15,.1),
+collect:()=>{tone(988,.08,"square",.09);tone(1319,.3,"square",.09,.08)},ok:()=>seq([660,990],.15,"sine",.13,.08),
+err:()=>{tone(220,.22,"sawtooth",.1);tone(160,.3,"sawtooth",.1,.15)}};
+function togSnd(){SON=!SON;try{localStorage.setItem("snd",SON?"1":"0")}catch(e){}$("sndb").textContent=SON?"On":"Off";if(SON)SND.ok()}
+document.addEventListener("pointerdown",e=>{ac();if(pendW&&AC&&AC.state=="running"){pendW=false;SND.welcome();return}e.target.closest&&e.target.closest("nav a")?SND.nav():SND.tap()},true);
+function showWelcome(){$("wb").textContent=f(cfg.welcomeBonus);$("wov").classList.add("on");pendW=true;ac();SND.welcome();setTimeout(()=>{if(AC&&AC.state=="running")pendW=false},400)}
+const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const reg=m=>m.region||(m.bdt?"Bangladesh":"International");
+const seg=(cur,v,after)=>["Bangladesh","International"].map(r=>`<a class="${cur==r?"on":""}" onclick="${v}='${r}';${after}">${r}</a>`).join("");
+function shrink(file,max,q){return new Promise((ok,no)=>{const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=im.width*k;c.height=im.height*k;c.getContext("2d").drawImage(im,0,0,c.width,c.height);ok(c.toDataURL("image/jpeg",q))};im.onerror=no;im.src=r.result};r.onerror=no;r.readAsDataURL(file)})}
+const $=id=>document.getElementById(id),f=n=>(+n).toFixed(2);
+function toast(t,ms){const e=$("toast");e.textContent=t;e.style.display="block";clearTimeout(toast.h);toast.h=setTimeout(()=>e.style.display="none",ms||2000)}
+const tabs=[["miners","car","Miners"],["tasks","list","Tasks"],["wallet","wallet","Wallet"],["friends","users","Friends"]];
+$("nav").innerHTML=tabs.map(t=>`<a data-t="${t[0]}" onclick="go('${t[0]}')"><svg class="ic"><use href="#i-${t[1]}"/></svg>${t[2]}</a>`).join("");
+function go(t){if(t=="wallet"){openW();return}cur=t;document.querySelectorAll(".pg").forEach(p=>p.classList.toggle("on",p.id=="p-"+t));document.querySelectorAll("nav a").forEach(a=>a.classList.toggle("on",a.dataset.t==t));scrollTo(0,0)}
+function openW(){$("ov").classList.add("on");document.querySelector('nav a[data-t=wallet]').classList.add("on");document.querySelector('nav a[data-t='+cur+']').classList.remove("on")}
+function closeW(){$("ov").classList.remove("on");document.querySelector('nav a[data-t=wallet]').classList.remove("on");go(cur)}
+function openP(){$("pov").classList.add("on")}
+function openDeposit(){closeW();go("deposit");renderDm()}
+function openWd(){closeW();go("withdraw");renderWm()}
+go("miners");
+function pending(m){const to=Math.min(Date.now(),m.start+m.days*864e5);return Math.max(0,(to-m.last)/864e5*m.daily)}
+function genCode(){return (cfg.codePrefix||"TQ")+Math.random().toString(36).slice(2,8).toUpperCase()}
+async function init(){
+ try{const c=await db.collection("config").doc("app").get();if(c.exists)cfg={...cfg,...c.data()};
+  const m=await db.collection("config").doc("miners").get();if(m.exists&&m.data().list)miners=m.data().list;
+  const w=await db.collection("config").doc("withdraw").get();if(w.exists&&w.data().list)wms=w.data().list;const dd=await db.collection("config").doc("deposit").get();if(dd.exists&&dd.data().list)dms=dd.data().list}catch(e){}
+ const s=await ref.get();
+ if(!s.exists){
+  const p=new URLSearchParams(location.search),sp=(tg&&tg.initDataUnsafe&&tg.initDataUnsafe.start_param)||p.get("startapp")||"",now=Date.now(),m0=miners[0];
+  me={name:tu.first_name||"User",username:tu.username||"",balance:+cfg.welcomeBonus,totalMined:0,refBy:sp,refUid:"",refCount:0,refQualified:0,refEarned:0,code:genCode(),created:now,banned:false,
+   miners:[]};
+  await ref.set(me);isNew=true;
+  if(sp){try{const q=await db.collection("users").where("code","==",sp).limit(1).get();if(!q.empty&&q.docs[0].id!=uid){me.refUid=q.docs[0].id;await ref.update({refUid:me.refUid});await q.docs[0].ref.update({refCount:firebase.firestore.FieldValue.increment(1)})}}catch(e){}}
+ }else me=s.data();
+ ref.onSnapshot(d=>{if(d.exists){me=d.data();render()}});
+ ["app","miners","withdraw","deposit"].forEach(k=>db.collection("config").doc(k).onSnapshot(d=>{if(!d.exists)return;const x=d.data();if(k=="app")cfg={...cfg,...x};if(k=="miners"&&x.list)miners=x.list;if(k=="withdraw"&&x.list)wms=x.list;if(k=="deposit"&&x.list)dms=x.list;render();renderWm();renderDm()}));
+ db.collection("tasks").where("active","==",true).onSnapshot(q=>{tasks=q.docs.map(d=>({id:d.id,...d.data()}));renderTasks()});
+ db.collection("submissions").where("uid","==",uid).onSnapshot(q=>{subs={};q.docs.forEach(d=>subs[d.data().taskId]=d.data().status);renderTasks()});
+ db.collection("withdrawals").where("uid","==",uid).onSnapshot(q=>{$("hist").innerHTML=q.docs.map(d=>d.data()).sort((a,b)=>b.at-a.at).map(w=>`<div class="card row" style="margin-bottom:6px;padding:10px"><span>$${f(w.amount)} · ${w.method||""}</span><span class="mute">${w.status}</span></div>`).join("")||'<div class="mute">No withdrawals yet</div>'});
+ db.collection("deposits").where("uid","==",uid).onSnapshot(q=>{$("dhist").innerHTML=q.docs.map(d=>d.data()).sort((a,b)=>b.at-a.at).map(w=>`<div class="card row" style="margin-bottom:6px;padding:10px"><span>$${f(w.amount)} · ${w.method||""}</span><span class="mute">${w.status}</span></div>`).join("")||'<div class="mute">No deposits yet</div>'});
+ setInterval(render,5000);render();if(isNew)showWelcome();
+}
+function img(m){return m.img?`<div class="img" style="background-image:url('${m.img}')"></div>`:`<div class="img" style="background:linear-gradient(160deg,#f3f6fa,${m.color}55)"><svg viewBox="0 0 120 50" width="70" fill="none" stroke="${m.color}" stroke-width="3"><path d="M8 34h104M16 34l8-16c2-3 4-4 8-4h40c4 0 6 1 9 4l11 12 8 2v2"/><circle cx="34" cy="36" r="7" fill="#fff"/><circle cx="88" cy="36" r="7" fill="#fff"/></svg></div>`}
+function render(){if(!me)return;
+ if(me.banned){document.body.innerHTML="<h2 style='padding:40px;text-align:center'>Account suspended</h2>";return}
+ if(cfg.eventText){$("evtBanner").style.display="block";$("evtBanner").textContent=cfg.eventText}else $("evtBanner").style.display="none";
+ const b=me.lastBroadcast;try{if(b&&localStorage.getItem("bc")!=String(b.at)){localStorage.setItem("bc",String(b.at));try{tg.showPopup({title:b.title.slice(0,60),message:b.msg.slice(0,250)})}catch(e){alert(b.title+" - "+b.msg)}}}catch(e){}
+ if(cfg.logo)$("lg").innerHTML=`<img src="${cfg.logo}" height="26" style="border-radius:6px"/>`;$("wab").style.display=cfg.whatsapp?"block":"none";
+ const act=(me.miners||[]).filter(m=>Date.now()<m.start+m.days*864e5),pend=act.reduce((a,m)=>a+pending(m),0),day=act.reduce((a,m)=>a+m.daily,0);
+ $("pn").textContent=me.name;$("pu").textContent=(me.username?"@"+me.username+" · ":"")+"ID "+uid;$("pm").textContent="$"+(me.totalMined||0).toFixed(4);
+ $("bal").textContent=$("bal2").textContent=$("bal3").textContent=f(me.balance);$("rate").textContent="$"+f(day)+" / day";
+ $("s1").textContent=act.length;$("s2").textContent=miners.length;$("s3").textContent="$"+f(day);$("s4").textContent="$"+((me.totalMined||0)+pend).toFixed(4);
+ $("mine").innerHTML=(me.miners||[]).map(m=>{const left=Math.max(0,Math.ceil((m.start+m.days*864e5-Date.now())/36e5)),pc=100-left/(m.days*24)*100;
+  return `<div class="card car"><div class="row sm"><b>${m.tier}</b><span class="mute">${left?"Mining":"Ended"}</span></div>${img(m)}<h4>${m.name}</h4><hr style="border:0;border-top:1px solid var(--line);margin:6px 0">
+  <div class="row"><span class="mute">Income / day</span><b>$${f(m.daily)}</b></div><hr style="border:0;border-top:1px solid var(--line);margin:6px 0"><div class="mute">Time remaining</div><div class="v">${left} hours</div>
+  <div class="bar"><i style="width:${pc}%"></i></div><div class="mute">ACCUMULATED</div><div class="v big2">$${pending(m).toFixed(6)}</div></div>`}).join("");
+ if(!(me.miners||[]).length)$("mine").innerHTML='<div class="card mute" style="grid-column:1/3">No miner yet. Activate your first plan below to start mining.</div>';
+ $("shop").innerHTML=miners.map(m=>`<div class="card car"><div class="row sm"><span class="mute">${String(m.id).padStart(2,"0")}</span><b>${m.tier}</b></div>${img(m)}<h4>${m.name}</h4><div class="mute">${m.type}</div><hr style="border:0;border-top:1px solid var(--line);margin:6px 0">
+  <div class="row"><span class="mute">Income / day</span><b>$${f(m.daily)}</b></div><hr style="border:0;border-top:1px solid var(--line);margin:6px 0"><div class="mute">${m.days} days</div><div class="price">$${m.price}</div>
+  <button class="${me.balance<m.price?"w":""}" onclick="activate(${m.id})">${me.balance<m.price?"Deposit to unlock":"Activate"}</button></div>`).join("");
+ const l=`https://t.me/${BOT}?startapp=${me.code}`;$("fcode").textContent=l;$("fname").textContent=me.name;$("fuser").textContent=me.username?"@"+me.username:"";
+ const av=$("favt");if(tu.photo_url){av.style.backgroundImage=`url(${tu.photo_url})`;av.textContent=""}else av.textContent=(me.name||"U")[0].toUpperCase();
+ $("fr1").textContent=me.refCount||0;$("fr2").textContent="$"+(me.refEarned||0).toFixed(3);$("fpol").textContent=cfg.refPolicy||"The policy will be published by the admin.";$("minw").textContent=f(cfg.minWithdraw);
+}
+async function collect(){
+ try{const got=await db.runTransaction(async tx=>{const sn=await tx.get(ref),u=sn.data(),now=Date.now();let sum=0;
+  const ms=(u.miners||[]).map(m=>{const to=Math.min(now,m.start+m.days*864e5),p=Math.max(0,(to-m.last)/864e5*m.daily);sum+=p;return {...m,last:Math.max(m.last,to)}});
+  if(sum<=0)return 0;tx.update(ref,{miners:ms,balance:+(u.balance+sum).toFixed(6),totalMined:+((u.totalMined||0)+sum).toFixed(6),lastClaim:now});return sum});
+  got?(SND.collect(),toast("Collected $"+got.toFixed(4))):(SND.err(),toast("Nothing to collect yet"))}catch(e){toast("Try again")}
+ if(!(me.miners||[]).some(m=>Date.now()<m.start+m.days*864e5)&&cfg.limitUrl)(tg?tg.openLink(cfg.limitUrl):open(cfg.limitUrl))}
+async function activate(id){const m=miners.find(x=>x.id==id);
+ if(me.balance<m.price){SND.err();toast("Not enough balance. Please deposit.");openDeposit();return}
+ try{await db.runTransaction(async tx=>{const sn=await tx.get(ref),u=sn.data();if(u.balance<m.price)throw 1;const now=Date.now();
+  tx.update(ref,{balance:+(u.balance-m.price).toFixed(6),miners:[...(u.miners||[]),{id:m.id,start:now,last:now,daily:m.daily,days:m.days,name:m.name,type:m.type,tier:m.tier,color:m.color,img:m.img||""}]})});SND.buy();toast(m.name+" activated")}catch(e){SND.err();toast("Not enough balance")}}
+function setTf(x){tf=x;renderTasks()}
+function renderTasks(){const v=Object.values(subs),c=[tasks.filter(av).length,v.filter(s=>s=="pending").length,v.filter(s=>s=="approved").length],n=["Available","In review","Completed"];
+ const list=tasks.filter(t=>tf=="Available"?av(t):tf=="In review"?subs[t.id]=="pending":subs[t.id]=="approved");
+ $("tasks").innerHTML=`<div class="tri">${n.map((x,i)=>`<div><b>${c[i]}</b><span>${x}</span></div>`).join("")}</div>
+ <div class="tabs">${n.map(x=>`<a class="${x==tf?"on":""}" onclick="setTf('${x}')">${x}</a>`).join("")}</div><div class="mute" style="margin:10px 0">${list.length} tasks</div>`+
+ (list.length?list.map(t=>`<div class="card" style="display:flex;gap:12px"><div style="flex:none;width:40px;height:40px;border-radius:50%;background:var(--bl);color:var(--blue);display:flex;align-items:center;justify-content:center"><svg class="ic"><use href="#i-list"/></svg></div><div style="flex:1"><b>${t.title}</b><div class="mute" style="margin:2px 0 6px">${t.desc||""}</div><b style="color:var(--blue)">+$${f(t.reward)}</b>${t.slots!=null?` <span class="mute">· ${t.slots} left</span>`:""}
+  <button class="w" style="margin-top:8px;padding:8px" ${subs[t.id]&&subs[t.id]!="rejected"?"disabled":""} onclick="doTask('${t.id}')">${subs[t.id]=="approved"?"Completed":subs[t.id]=="pending"?"In review":"Start"}</button></div></div>`).join(""):`<div class="mute">Nothing here yet.</div>`)}
+async function doTask(id){const t=tasks.find(x=>x.id==id);if(t.url)(tg?tg.openLink(t.url):open(t.url));
+ await db.collection("submissions").doc(uid+"_"+id).set({uid,name:me.name,taskId:id,title:t.title,reward:t.reward,status:"pending",at:Date.now()});SND.ok();toast("Submitted for review")}
+function renderDm(){const e=$("dm");if(!e)return;$("dseg").innerHTML=seg(dreg,"dreg","dmi=null;renderDm()");
+ const L=dms.map((m,i)=>[m,i]).filter(x=>reg(x[0])==dreg);
+ e.innerHTML=L.length?L.map(([m,i])=>`<div class="wmc ${dmi==i?"sel":""}" onclick="dmi=${i};renderDm()">${m.img?`<img src="${m.img}" width="36" height="36" style="border-radius:8px;object-fit:cover"/>`:""}<div><b>${esc(m.name)}</b><div class="mute">${m.code?esc(m.code)+" · ":""}Min $${f(m.min||1)}</div></div></div>`).join(""):'<div class="mute">No method available in this region yet.</div>';
+ const m=dms[dmi],di=$("dinfo");if(!m||reg(m)!=dreg){di.style.display="none";$("bd_info").style.display="none";$("dbd").style.display="none";$("deta").textContent="";return}
+ const bd=reg(m)=="Bangladesh";di.style.display="block";
+ di.innerHTML=`<div class="mute">Send payment to${m.code?" ("+esc(m.code)+")":""}</div><div style="font-size:17px;font-weight:700;word-break:break-all;margin:4px 0">${esc(m.num||"-")}</div><div class="mute" style="white-space:pre-wrap">${esc(m.note||"")}</div>${m.num?`<button class="w" style="margin-top:8px;padding:8px" onclick="cpd(${dmi})">Copy</button>`:""}`;
+ $("bd_info").style.display=bd?"block":"none";$("dbd").style.display=bd?"block":"none";$("dshl").textContent=bd?"Payment screenshot (required)":"Payment screenshot (optional)";$("deta").textContent=m.eta?"Processing time: "+m.eta:"";$("bdt_rate").textContent=cfg.bdtRate||120;calcBdt()}
+function cpd(i){navigator.clipboard&&navigator.clipboard.writeText(dms[i].num);SND.ok();toast("Copied")}
+function calcBdt(){$("bdt_pay").textContent=((+$("damt").value||0)*(cfg.bdtRate||120)).toFixed(0)}
+async function submitDeposit(){const m=dms[dmi];if(!m||reg(m)!=dreg){SND.err();return toast("Choose a payment method")}
+ const amt=+$("damt").value,tx=$("dtx").value.trim(),bd=reg(m)=="Bangladesh",sn=$("dsn").value.trim(),fl=$("dsh").files[0];
+ const bad=!amt||amt<(m.min||1)?"Minimum is $"+f(m.min||1):!tx?"Enter the transaction ID":bd&&sn.replace(/\D/g,"").length<6?"Enter the number you sent from":bd&&!fl?"Upload the payment screenshot":"";
+ if(bad){SND.err();return toast(bad)}
+ let shot="";try{if(fl)shot=await shrink(fl,700,.6)}catch(e){}
+ if(bd&&!shot){SND.err();return toast("Could not read the screenshot")}
+ try{await db.collection("deposits").add({uid,name:me.name,amount:amt,method:m.name,region:reg(m),code:m.code||"",txid:tx,sender:sn,shot,rate:bd?+(cfg.bdtRate||120):0,bdt:bd?Math.round(amt*(cfg.bdtRate||120)):0,status:"pending",at:Date.now()});
+  ["damt","dtx","dsn","dsh"].forEach(i=>$(i).value="");SND.dep();toast("Deposit request sent. "+(m.eta?"Usually processed in "+m.eta+".":"Please wait for approval."),4500);go("miners")}catch(e){SND.err();toast("Failed to send. Try again")}}
+function renderWm(){const e=$("wm");if(!e)return;$("wseg").innerHTML=seg(wreg,"wreg","wm=null;renderWm();calcW()");
+ const L=wms.map((m,i)=>[m,i]).filter(x=>reg(x[0])==wreg);
+ e.innerHTML=L.length?L.map(([m,i])=>`<div class="wmc ${wm==i?"sel":""}" onclick="wm=${i};renderWm();calcW()">${m.img?`<img src="${m.img}" width="36" height="36" style="border-radius:8px;object-fit:cover"/>`:""}<div><b>${esc(m.name)}</b><div class="mute">${m.code?esc(m.code)+" · ":""}Min $${f(m.min||cfg.minWithdraw)}${m.fee?" · Fee "+m.fee+"%":""}</div></div></div>`).join(""):'<div class="mute">No method available in this region yet.</div>';
+ const m=wms[wm];$("weta").textContent=m&&reg(m)==wreg&&m.eta?"Processing time: "+m.eta:""}
+function calcW(){const m=wms[wm],a=+$("wamt").value||0;if(!m||reg(m)!=wreg||!a){$("wnet").textContent="";return}const n=a*(1-(+m.fee||0)/100),rt=+(cfg.bdtRateW||cfg.bdtRate||120);$("wnet").textContent="You receive: $"+f(n)+(reg(m)=="Bangladesh"?" ≈ ৳"+Math.round(n*rt)+" (rate "+rt+")":"")}
+async function withdraw(){const m=wms[wm];if(!m||reg(m)!=wreg){SND.err();return toast("Choose a method")}
+ const a=+$("wamt").value,ad=$("waddr").value.trim(),min=+(m.min||cfg.minWithdraw),bd=reg(m)=="Bangladesh",rt=+(cfg.bdtRateW||cfg.bdtRate||120);
+ if(!a||a<min){SND.err();return toast("Minimum is $"+f(min))}if(ad.length<6){SND.err();return toast("Enter a valid account / address")}
+ const net=+(a*(1-(+m.fee||0)/100)).toFixed(6),bdt=bd?Math.round(net*rt):0;
+ try{await db.runTransaction(async tx=>{const sn=await tx.get(ref);if(sn.data().balance<a)throw 1;tx.update(ref,{balance:+(sn.data().balance-a).toFixed(6)});tx.set(db.collection("withdrawals").doc(),{uid,name:me.name,amount:a,fee:+m.fee||0,net,bdt,rate:bd?rt:0,method:m.name,region:reg(m),code:m.code||"",address:ad,status:"pending",at:Date.now()})});
+  $("wamt").value=$("waddr").value="";$("wnet").textContent="";SND.wd();toast("Withdrawal requested. "+(m.eta?"Usually processed in "+m.eta+".":"Please wait for approval."),4500);go("miners")}catch(e){SND.err();toast("Insufficient balance")}}
+const av=t=>!subs[t.id]||subs[t.id]=="rejected";
+function calcT(){$("ntc").textContent="Cost: $"+f((+$("ntr").value||0)*(+$("nts").value||0))}
+async function submitTask(){const t=$("ntt").value.trim(),r=+$("ntr").value,n=Math.floor(+$("nts").value),c=+(r*n).toFixed(6);
+ if(!t||!(r>0)||!(n>0))return toast("Fill title, reward, users");
+ try{await db.runTransaction(async tx=>{const sn=await tx.get(ref);if(sn.data().balance<c)throw 1;tx.update(ref,{balance:+(sn.data().balance-c).toFixed(6)});tx.set(db.collection("taskReq").doc(),{uid,name:me.name,title:t,desc:$("ntd").value,url:$("ntu").value.trim(),reward:r,slots:n,cost:c,status:"pending",at:Date.now()})});
+  ["ntt","ntd","ntu","ntr","nts"].forEach(i=>$(i).value="");$("ntc").textContent="";SND.ok();toast("Task sent for review");go("tasks")}catch(e){toast("Insufficient balance")}}
+function share(){const l=`https://t.me/${BOT}?startapp=${me.code}`,u="https://t.me/share/url?url="+encodeURIComponent(l)+"&text="+encodeURIComponent("Join Torqo and start free car mining!");tg?tg.openTelegramLink(u):open(u)}
+function copyLink(){navigator.clipboard&&navigator.clipboard.writeText(`https://t.me/${BOT}?startapp=${me.code}`);SND.ok();toast("Link copied")}
+function contactParvez(){if(!cfg.supportUser)return toast("Support not set yet");const u="https://t.me/"+cfg.supportUser.replace("@","");tg?tg.openTelegramLink(u):open(u)}
+function contactWa(){const u="https://wa.me/"+String(cfg.whatsapp).replace(/\D/g,"");tg?tg.openLink(u):open(u)}
+init();
+</script></body></html>
