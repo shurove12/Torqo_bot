@@ -165,7 +165,7 @@ const uid=String(tu.id);const ref=db.collection("users").doc(uid);
 
 const DEF=[["Terragon","Compact · Silver","Common",1,.15,"#9aa3ad"],["Verdant","Sport Sedan · Green","Common",3,.5,"#1f4d33"],["Marina","Sport Coupe · Blue","Common",5,.9,"#1d4fb8"],["Frostveil","Luxury Sedan · White","Rare",10,2,"#8a97a5"],["Ember","SUV · Red","Rare",25,5,"#b3261e"],["Nocturne","Grand Tourer · Black","Rare",50,10,"#222"],["Voltaris","Supercar · Yellow","Epic",100,25,"#e6b800"],["Prisma","Exotic Coupe · Violet","Epic",200,50,"#7a3fb5"],["Solaris","Luxury GT · Gold","Legendary",300,80,"#c9a227"],["Eldrath","Hypercar · Orange","Legendary",500,150,"#e8630a"]];
 let miners=DEF.map((d,i)=>({id:i+1,name:d[0],type:d[1],tier:d[2],price:d[3],daily:d[4],days:30,color:d[5],img:""}));
-let me=null,cfg={welcomeBonus:1,minWithdraw:5,refBonus:.1,codePrefix:"TQ",refPolicy:"",limitUrl:"",logo:"",bdtRate:120,supportUser:"",whatsapp:"",eventText:""},tasks=[],wm=null,wms=[],dms=[],dmi=null,cur="miners",tf="Available",subs={};
+let me=null,cfg={welcomeBonus:1,minWithdraw:5,refBonus:.1,minBalWd:5.1,refPct:10,refMode:"Every purchase",codePrefix:"TQ",refPolicy:"",limitUrl:"",logo:"",bdtRate:120,supportUser:"",whatsapp:"",eventText:""},tasks=[],wm=null,wms=[],dms=[],dmi=null,cur="miners",tf="Available",subs={};
 let dreg="Bangladesh",wreg="Bangladesh",isNew=false,pendW=false,AC;
 let SON=true;try{SON=localStorage.getItem("snd")!="0"}catch(e){}
 function ac(){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state=="suspended")AC.resume()}catch(e){}return AC}
@@ -237,7 +237,7 @@ function render(){if(!me)return;
   <button class="${me.balance<m.price?"w":""}" onclick="activate(${m.id})">${me.balance<m.price?"Deposit to unlock":"Activate"}</button></div>`).join("");
  const l=`https://t.me/${BOT}?startapp=${me.code}`;$("fcode").textContent=l;$("fname").textContent=me.name;$("fuser").textContent=me.username?"@"+me.username:"";
  const av=$("favt");if(tu.photo_url){av.style.backgroundImage=`url(${tu.photo_url})`;av.textContent=""}else av.textContent=(me.name||"U")[0].toUpperCase();
- $("fr1").textContent=me.refCount||0;$("fr2").textContent="$"+(me.refEarned||0).toFixed(3);$("fpol").textContent=cfg.refPolicy||"The policy will be published by the admin.";$("minw").textContent=f(cfg.minWithdraw);
+ $("fr1").textContent=me.refCount||0;$("fr2").textContent="$"+(me.refEarned||0).toFixed(3);$("fpol").textContent=cfg.refPolicy||"The policy will be published by the admin.";$("minw").textContent=f(cfg.minWithdraw)+(+cfg.minBalWd?" · Balance needed $"+f(cfg.minBalWd):"");
 }
 async function collect(){
  try{const got=await db.runTransaction(async tx=>{const sn=await tx.get(ref),u=sn.data(),now=Date.now();let sum=0;
@@ -247,8 +247,12 @@ async function collect(){
  if(!(me.miners||[]).some(m=>Date.now()<m.start+m.days*864e5)&&cfg.limitUrl)(tg?tg.openLink(cfg.limitUrl):open(cfg.limitUrl))}
 async function activate(id){const m=miners.find(x=>x.id==id);
  if(me.balance<m.price){SND.err();toast("Not enough balance. Please deposit.");openDeposit();return}
- try{await db.runTransaction(async tx=>{const sn=await tx.get(ref),u=sn.data();if(u.balance<m.price)throw 1;const now=Date.now();
-  tx.update(ref,{balance:+(u.balance-m.price).toFixed(6),miners:[...(u.miners||[]),{id:m.id,start:now,last:now,daily:m.daily,days:m.days,name:m.name,type:m.type,tier:m.tier,color:m.color,img:m.img||""}]})});SND.buy();toast(m.name+" activated")}catch(e){SND.err();toast("Not enough balance")}}
+ try{await db.runTransaction(async tx=>{const sn=await tx.get(ref),u=sn.data();if(u.balance<m.price)throw 1;
+  const pct=+cfg.refPct||0;let rr=null,rs=null;
+  if(u.refUid&&pct>0&&(cfg.refMode!="First purchase only"||!u.refPaid)){rr=db.collection("users").doc(u.refUid);rs=await tx.get(rr)}
+  const now=Date.now(),up={balance:+(u.balance-m.price).toFixed(6),miners:[...(u.miners||[]),{id:m.id,start:now,last:now,daily:m.daily,days:m.days,name:m.name,type:m.type,tier:m.tier,color:m.color,img:m.img||""}]};
+  if(rs&&rs.exists){const c=+(m.price*pct/100).toFixed(6),x=rs.data(),ru={balance:+((x.balance||0)+c).toFixed(6),refEarned:+((x.refEarned||0)+c).toFixed(6)};if(!u.refPaid)ru.refQualified=firebase.firestore.FieldValue.increment(1);tx.update(rr,ru);up.refPaid=true}
+  tx.update(ref,up)});SND.buy();toast(m.name+" activated")}catch(e){SND.err();toast("Not enough balance")}}
 function setTf(x){tf=x;renderTasks()}
 function renderTasks(){const v=Object.values(subs),c=[tasks.filter(av).length,v.filter(s=>s=="pending").length,v.filter(s=>s=="approved").length],n=["Available","In review","Completed"];
  const list=tasks.filter(t=>tf=="Available"?av(t):tf=="In review"?subs[t.id]=="pending":subs[t.id]=="approved");
@@ -282,7 +286,7 @@ function renderWm(){const e=$("wm");if(!e)return;$("wseg").innerHTML=seg(wreg,"w
 function calcW(){const m=wms[wm],a=+$("wamt").value||0;if(!m||reg(m)!=wreg||!a){$("wnet").textContent="";return}const n=a*(1-(+m.fee||0)/100),rt=+(cfg.bdtRateW||cfg.bdtRate||120);$("wnet").textContent="You receive: $"+f(n)+(reg(m)=="Bangladesh"?" ≈ ৳"+Math.round(n*rt)+" (rate "+rt+")":"")}
 async function withdraw(){const m=wms[wm];if(!m||reg(m)!=wreg){SND.err();return toast("Choose a method")}
  const a=+$("wamt").value,ad=$("waddr").value.trim(),min=+(m.min||cfg.minWithdraw),bd=reg(m)=="Bangladesh",rt=+(cfg.bdtRateW||cfg.bdtRate||120);
- if(!a||a<min){SND.err();return toast("Minimum is $"+f(min))}if(ad.length<6){SND.err();return toast("Enter a valid account / address")}
+ if(!a||a<min){SND.err();return toast("Minimum is $"+f(min))}if(me.balance<+(cfg.minBalWd||0)){SND.err();return toast("You need at least $"+f(cfg.minBalWd)+" balance to withdraw")}if(ad.length<6){SND.err();return toast("Enter a valid account / address")}
  const net=+(a*(1-(+m.fee||0)/100)).toFixed(6),bdt=bd?Math.round(net*rt):0;
  try{await db.runTransaction(async tx=>{const sn=await tx.get(ref);if(sn.data().balance<a)throw 1;tx.update(ref,{balance:+(sn.data().balance-a).toFixed(6)});tx.set(db.collection("withdrawals").doc(),{uid,name:me.name,amount:a,fee:+m.fee||0,net,bdt,rate:bd?rt:0,method:m.name,region:reg(m),code:m.code||"",address:ad,status:"pending",at:Date.now()})});
   $("wamt").value=$("waddr").value="";$("wnet").textContent="";SND.wd();toast("Withdrawal requested. "+(m.eta?"Usually processed in "+m.eta+".":"Please wait for approval."),4500);go("miners")}catch(e){SND.err();toast("Insufficient balance")}}
