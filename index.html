@@ -26,7 +26,7 @@ h1{font-size:24px;font-weight:800;} h2{font-size:20px;font-weight:800;margin:20p
 button{width:100%;padding:12px;border-radius:99px;border:1px solid var(--bd);background:var(--bl);color:#0a3d78;font-weight:600;font-size:15px;cursor:pointer}
 button.w{background:#fff;border-color:var(--line);color:var(--ink)} button:disabled{opacity:.5}
 .bar{height:6px;border-radius:6px;background:#e6edf4;margin:8px 0}.bar i{display:block;height:100%;border-radius:6px;background:var(--blue)}
-nav{position:fixed;left:50%;transform:translateX(-50%);width:calc(100% - 24px);max-width:536px;bottom:12px;background:var(--gr);border:1px solid var(--bd);border-radius:24px;display:flex;padding:6px;gap:4px;z-index:5}
+nav{position:fixed;left:50%;transform:translateX(-50%);width:calc(100% - 24px);max-width:536px;bottom:12px;background:var(--gr);border:1px solid var(--bd);border-radius:24px;display:flex;padding:6px;gap:4px;z-index:5;will-change:transform}
 nav a{flex:1;text-align:center;padding:8px 0;border-radius:18px;font-size:12px;color:#2f5a43;border:1px solid transparent;cursor:pointer}
 nav a.on{background:var(--bl);border-color:var(--bd);color:#0a3d78} nav a .ic{display:block;margin:0 auto 2px}
 .pg{display:none}.pg.on{display:block}.crumb{display:flex;gap:8px;align-items:center;color:var(--mute);font-size:13px}
@@ -44,7 +44,15 @@ input,select{width:100%;padding:12px;border:1px solid var(--bd);border-radius:14
 #toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:20px;display:none;z-index:99;font-size:13px}
 #evtBanner{display:none;background:linear-gradient(135deg,#0a56a8,#3b9dff);color:#fff;padding:12px;border-radius:14px;margin-bottom:10px;font-weight:700;text-align:center}
 .seg{display:flex;gap:8px;margin:8px 0}.seg a{flex:1;text-align:center;padding:10px;border-radius:14px;background:#fff;border:1px solid var(--line);color:var(--blue);font-weight:700;cursor:pointer}.seg a.on{background:var(--blue);color:#fff}input[type=file]{padding:9px;font-size:13px}
+#tick{position:sticky;top:0;z-index:40;height:48px;overflow:hidden;contain:layout paint;background:transparent;color:var(--ink);display:none;border-bottom:1px solid var(--line)}
+#tickin{height:48px;min-height:48px;display:flex;align-items:center;gap:8px;padding:0 4px;white-space:nowrap;overflow:hidden;animation:tkin 3.6s ease both}
+.tkav{flex:none;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;line-height:1}
+.tktx{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12.5px}
+.tkamt{flex:none;align-self:flex-start;margin-top:6px;line-height:1;color:var(--blue);font-weight:600;font-size:12px}.tkamt i{font-style:normal;font-size:9px;vertical-align:super}
+.tkamt.big{font-size:17px;font-weight:800;color:#c2410c;margin-top:4px}.tkamt.big i{font-size:11px}
+@keyframes tkin{0%{transform:translateX(100%);opacity:0}8%{transform:translateX(0);opacity:1}92%{transform:translateX(0);opacity:1}100%{transform:translateX(-100%);opacity:0}}
 </style></head><body>
+<div id="tick"><div id="tickin"></div></div>
 <div id="toast"></div>
 <div id="evtBanner"></div>
 
@@ -63,7 +71,9 @@ input,select{width:100%;padding:12px;border:1px solid var(--bd);border-radius:14
 
 <section class="pg" id="p-tasks">
  <div class="crumb"><svg class="ic"><use href="#i-list"/></svg>TORQO / REWARDS</div><h1 style="margin:16px 0 0;font-size:28px">Task hub</h1><button class="w" style="margin-top:10px" onclick="go('newtask')">+ Create task</button>
+ <div id="adcard" class="card" style="display:none;margin-top:10px"></div>
  <div id="tasks" style="margin-top:10px"></div>
+ <h3 id="payh" style="display:none;margin-top:18px">Recent payouts</h3><div id="payl"></div>
 </section>
 
 <section class="pg" id="p-friends">
@@ -77,7 +87,7 @@ input,select{width:100%;padding:12px;border:1px solid var(--bd);border-radius:14
  <h3 style="margin-top:18px">All Policies &amp; Help</h3><div class="mute" style="margin-bottom:8px">Tap a policy to read it.</div><div id="pol"></div>
 </section>
 
-<section class="pg" id="p-newtask"><div class="crumb" onclick="go('tasks')" style="cursor:pointer">← BACK</div><h1 style="margin:16px 0 6px;font-size:28px">Create task</h1><div class="mute">Cost = reward × users, deducted now (refunded if rejected)</div>
+<section class="pg" id="p-newtask"><div class="crumb" onclick="go('tasks')" style="cursor:pointer">← BACK</div><h1 style="margin:16px 0 6px;font-size:28px">Create task</h1><div class="mute">Cost = reward × users, deducted now (refunded if rejected). Minimum reward: $<span id="mtr">0.01</span> per user. An admin reviews every task before it goes live.</div>
  <input id="ntt" placeholder="Task title"/><input id="ntd" placeholder="Description"/><input id="ntu" placeholder="Task link (https://...)"/><input id="ntr" type="number" placeholder="Reward per user (USD)" oninput="calcT()"/><input id="nts" type="number" placeholder="Number of users" oninput="calcT()"/><div id="ntc" class="mute" style="margin:6px 0"></div><button onclick="submitTask()">Submit for review</button>
 </section>
 
@@ -167,13 +177,75 @@ const uid=String(tu.id);const ref=db.collection("users").doc(uid);
 
 const DEF=[["Terragon","Compact · Silver","Common",1,.15,"#9aa3ad"],["Verdant","Sport Sedan · Green","Common",3,.5,"#1f4d33"],["Marina","Sport Coupe · Blue","Common",5,.9,"#1d4fb8"],["Frostveil","Luxury Sedan · White","Rare",10,2,"#8a97a5"],["Ember","SUV · Red","Rare",25,5,"#b3261e"],["Nocturne","Grand Tourer · Black","Rare",50,10,"#222"],["Voltaris","Supercar · Yellow","Epic",100,25,"#e6b800"],["Prisma","Exotic Coupe · Violet","Epic",200,50,"#7a3fb5"],["Solaris","Luxury GT · Gold","Legendary",300,80,"#c9a227"],["Eldrath","Hypercar · Orange","Legendary",500,150,"#e8630a"]];
 let miners=DEF.map((d,i)=>({id:i+1,name:d[0],type:d[1],tier:d[2],price:d[3],daily:d[4],days:30,color:d[5],img:""}));
-let me=null,cfg={welcomeBonus:1,minWithdraw:5,refBonus:.1,minBalWd:5.1,refPct:10,refMode:"Every purchase",codePrefix:"TQ",refPolicy:"",limitUrl:"",logo:"",bdtRate:120,supportUser:"",whatsapp:"",eventText:""},tasks=[],wm=null,wms=[],dms=[],dmi=null,cur="miners",tf="Available",subs={};
+let me=null,cfg={welcomeBonus:1,minWithdraw:5,refBonus:.1,minBalWd:5.1,refPct:10,refMode:"Every purchase",adsOn:false,adReward:.01,adDailyLimit:5,adOrder:"Adsgram first",minTaskReward:.01,tickerText:"",codePrefix:"TQ",refPolicy:"",limitUrl:"",logo:"",bdtRate:120,supportUser:"",whatsapp:"",eventText:""},tasks=[],wm=null,wms=[],dms=[],dmi=null,cur="miners",tf="Available",subs={};
 const POL=[{"id": 1, "title": "How Torqo Works", "body": "1. Open the app from Telegram. Your account is created automatically from your Telegram profile. There is no separate sign-up and no password.\n2. You receive a one-time welcome bonus of ${welcome}.\n3. Open the Miners tab. Every plan shows its price, daily income and duration. Activate a plan using your balance.\n4. After activation, income builds up over time. Tap Collect to move the income you have earned to your balance.\n5. To buy bigger plans, add funds with Deposit.\n6. Complete Tasks and share your referral link to earn extra rewards.\n7. When your balance meets the withdrawal rules, use Withdraw to cash out.\n8. Every deposit and every withdrawal is reviewed by an administrator before it is completed.\n9. Please read the other policies in this list before you deposit or withdraw."}, {"id": 2, "title": "Welcome Bonus & Account", "body": "- Each Telegram account may have one Torqo account.\n- The welcome bonus of ${welcome} is credited once, when your account is first created.\n- The welcome bonus is a platform credit. It can be used to activate a plan. It is subject to the same withdrawal rules as the rest of your balance.\n- Accounts created with false information, duplicate accounts, or accounts used to abuse bonuses may be restricted or closed and their balance may be forfeited."}, {"id": 3, "title": "Plans & Earnings", "body": "- Each plan shows its price, daily income and duration in days before you buy it.\n- Income builds up from the moment a plan is activated until the plan duration ends. Tap Collect to add earned income to your balance.\n- The price, daily income, duration and availability of plans are set by the operator and may change at any time. Changes apply to new activations only. A plan you have already activated keeps the terms shown when you activated it.\n- A plan that has reached the end of its duration stops earning.\n- Plan purchases are final and cannot be cancelled or refunded once activated."}, {"id": 4, "title": "Deposit Policy", "body": "1. Open Deposit and choose your region: Bangladesh or International.\n2. Select a payment method. Read the instructions, scan the QR code or copy the account number or wallet address shown.\n3. Send the payment. For Bangladesh methods the current rate is 1 USD = {rate} BDT. The app shows how much you need to pay.\n4. Enter the amount in USD and the transaction ID (TXID).\n5. For Bangladesh methods you must also enter the number you sent the money from and upload a payment screenshot. For International methods a screenshot is optional.\n6. Submit the request and wait. The estimated processing time is shown for each method. Estimates are not guarantees.\n7. After the administrator verifies your payment, the amount is added to your balance. If the payment cannot be verified, the request is rejected and nothing is credited.\nImportant:\n- Send only to the details shown in the app, and only on the network shown for that method. Payments sent to the wrong address or the wrong network may be lost and cannot be recovered by us.\n- Minimum deposit is shown on each method. There is no maximum.\n- Fake screenshots, reused transaction IDs or false information lead to rejection and may lead to a ban."}, {"id": 5, "title": "Withdrawal Policy", "body": "1. Open Withdraw and choose your region: Bangladesh or International.\n2. Select a method and enter your own account number or wallet address. Check it carefully.\n3. Enter the amount in USD. The minimum withdrawal is ${minWithdraw}. Your balance must be at least ${minBal} to withdraw.\n4. Any fee shown on the method is deducted from the amount you receive. For Bangladesh methods the amount is converted at 1 USD = {rateW} BDT.\n5. When you submit, the amount is removed from your balance and your request is marked pending.\n6. An administrator reviews the request. The estimated processing time is shown for each method. Estimates are not guarantees.\n7. If approved, the payment is sent to the account or address you entered. If rejected, the full amount is returned to your balance.\nImportant:\n- You are responsible for the account number or wallet address you enter. Payments sent to a wrong address cannot be recovered.\n- Withdrawals may be delayed or refused if we suspect fraud, duplicate accounts or breach of these policies."}, {"id": 6, "title": "Referral Policy", "body": "- Share your referral link or code with friends.\n- When a friend joins with your link and buys a plan, you earn {refPct}% of the price of that plan. It is added to your balance. The operator decides whether commission is paid on every purchase or only on the first one.\n- Your referral count, and the amount you earned, are shown on the referral page.\n- Referring yourself, creating extra accounts, or using fake users to earn commission is not allowed. Such commission can be removed and accounts can be banned.\n- The operator may change the commission rate at any time. Changes apply to future purchases."}, {"id": 7, "title": "Tasks Policy", "body": "- Tasks are small actions, such as visiting a link, that earn a reward.\n- Do the task honestly, then submit it. An administrator reviews your submission.\n- Approved tasks credit the reward to your balance. Rejected tasks give no reward, and you may try again if the task is still open.\n- Some tasks have a limited number of slots. When the slots are used up the task closes.\n- If you request a task for your own link, its cost is taken from your balance when you submit. If the request is rejected, the cost is returned.\n- Fake submissions or automation will be rejected and may lead to a ban."}, {"id": 8, "title": "Advertising Policy", "body": "- Torqo may show advertisements, including rewarded ads, provided by third-party advertising partners.\n- You choose whether to watch an ad. Ads open only when you tap a button.\n- Do not click ads by mistake on purpose, use bots, or try to create fake views or clicks. This can lead to loss of rewards and a ban.\n- Ad content is provided by our advertising partners. We do not control it, and we do not endorse the advertisers.\n- Advertising partners may process some device and usage data under their own privacy policies.\n- Report inappropriate ads to {support}."}, {"id": 9, "title": "Fair Use & Anti-Fraud", "body": "The following are not allowed:\n- Multiple accounts for one person, or using fake accounts to gain bonuses or commission.\n- Bots, scripts, emulators or any automation.\n- Fake or edited payment proofs, reused transaction IDs, or false information.\n- Attempts to damage, overload or exploit the app or its database.\n- Using the app for illegal activity or money laundering.\nIf we find a breach, we may reject requests, remove rewards or commission, freeze the balance, and ban the account. Decisions are made at the operator's discretion."}, {"id": 10, "title": "Risk Disclosure", "body": "Please read this before you deposit.\n- Torqo is an in-app earning platform. It is not a bank, an investment service or a financial institution.\n- Income from plans is credited as shown in the app and is set by the operator. No profit is guaranteed. Plans, rates and rules may change.\n- Earning figures shown in the app are what the app credits. They are not a promise of future results.\n- Deposits and withdrawals are reviewed by an administrator and can be delayed, rejected or limited.\n- Cryptocurrency and mobile-money transfers can be irreversible and prices can change.\n- Only deposit money you can afford to lose. Do not borrow money to deposit."}, {"id": 11, "title": "Privacy Policy", "body": "What we collect:\n- Your Telegram ID, name and username, which the app receives from Telegram when you open it.\n- Your balance, plans, tasks, referral and transaction activity inside the app.\n- Information you submit for deposits and withdrawals: amount, method, transaction ID, sender number, payment screenshot and the account or wallet address you enter.\nHow we use it:\n- To run your account, review deposits and withdrawals, prevent fraud and support you.\n- To show advertisements through our advertising partners.\nStorage and sharing:\n- Data is stored with our cloud database provider, Google Firebase.\n- We do not sell your personal data. We share it only when needed to run the service, when required by law, or with advertising partners as described in the Advertising Policy.\nYour choices:\n- You can ask {support} to correct or delete your data. Some records may be kept where needed for security or legal reasons."}, {"id": 12, "title": "Terms of Service", "body": "By using Torqo you agree to these terms.\n- You must be at least 18 years old, or the legal age in your country.\n- You must follow all policies in this list. The operator may update the policies at any time. Continued use means you accept the updates.\n- You are responsible for your Telegram account, the payment details you enter, and any taxes that apply to you.\n- The service is provided as is. We do not guarantee that it will always be available or free of errors.\n- We may suspend or close accounts, and refuse or reverse requests, to protect the service and its users.\n- To the extent allowed by law, the operator is not liable for losses caused by wrong payment details, network problems, third-party services or your breach of these terms."}, {"id": 13, "title": "Contact & Support", "body": "Need help with a deposit, withdrawal or your account? Contact {support} on Telegram.\nWhen you write, include your Telegram ID, the amount, the payment method and the transaction ID, and attach a screenshot. Never share passwords, private keys or recovery phrases with anyone. We will never ask for them."}];let pols=POL;
 function fillP(t){const c=cfg;return String(t).replace(/\{(\w+)\}/g,(m,k)=>{const v={support:c.supportUser?"@"+String(c.supportUser).replace("@",""):"the support contact in the app",minWithdraw:f(c.minWithdraw),minBal:f(c.minBalWd),refPct:c.refPct,rate:c.bdtRate||120,rateW:c.bdtRateW||c.bdtRate||120,welcome:f(c.welcomeBonus)}[k];return v==null?m:v})}
 function renderPol(){const e=$("pol");if(!e)return;e.innerHTML=pols.map((p,i)=>`<div class="wmc" onclick="openPol(${i})"><div><b>${esc(p.title)}</b></div></div>`).join("")}
 function openPol(i){const p=pols[i];$("polsh").innerHTML=`<div class="hdl"></div><h3 style="margin:0 0 10px">${esc(p.title)}</h3><div style="white-space:pre-wrap;font-size:13.5px;line-height:1.6">${esc(fillP(p.body))}</div><button style="margin-top:14px" onclick="closePol()">Close</button>`;$("polov").classList.add("on")}
 function closePol(){$("polov").classList.remove("on")}
 function loadPol(){renderPol();db.collection("config").doc("policies").get().then(s=>{if(s.exists&&s.data().list&&s.data().list.length){pols=s.data().list;renderPol()}}).catch(()=>{})}
+let adLoaded={},adBusy=false;
+function loadAds(){const add=(k,src,at)=>{if(adLoaded[k])return;adLoaded[k]=1;const s=document.createElement("script");s.src=src;s.async=true;Object.keys(at||{}).forEach(a=>s.setAttribute(a,at[a]));document.head.appendChild(s)};
+ if(cfg.adsOn&&cfg.adsgramBlock)add("ag","https://sad.adsgram.ai/js/sad.min.js");
+ const z=String(cfg.monetagZone||"").replace(/\W/g,"");if(cfg.adsOn&&z)add("mt"+z,"https://libtl.com/sdk.js",{"data-zone":z,"data-sdk":"show_"+z});
+ updAd()}
+function todayKey(){return new Date(Date.now()+6*3600*1000).toISOString().slice(0,10)}
+function adUsed(){return me&&me.adDay==todayKey()?(+me.adCount||0):0}
+function updAd(){if($("mtr"))$("mtr").textContent=f(cfg.minTaskReward||.01);
+ const n=adUsed(),lim=+cfg.adDailyLimit||5,left=Math.max(lim-n,0);
+ ["adcard"].forEach(id=>{const e=$(id);if(!e)return;e.style.display=cfg.adsOn?"block":"none";if(!cfg.adsOn||adBusy)return;
+  e.innerHTML=`<b>Watch an ad, get a bonus</b><div class="mute">Optional. Earn $${f(cfg.adReward)} per ad · ${left} of ${lim} left today</div><button onclick="watchAd()" ${left<=0?"disabled":""}>Watch ad (+$${f(cfg.adReward)})</button><div class="mute" style="margin-top:6px;font-size:11px">Ads are optional. Every other feature works without watching ads.</div>`})}
+function showNet(net){
+ if(net=="adsgram"){if(!cfg.adsgramBlock||!window.Adsgram)return Promise.resolve(false);try{return window.Adsgram.init({blockId:String(cfg.adsgramBlock)}).show().then(r=>!!(r&&r.done)).catch(()=>false)}catch(e){return Promise.resolve(false)}}
+ const z=String(cfg.monetagZone||"").replace(/\W/g,""),fn=z&&window["show_"+z];if(!fn)return Promise.resolve(false);
+ try{return Promise.resolve(fn()).then(()=>true).catch(()=>false)}catch(e){return Promise.resolve(false)}}
+async function watchAd(){if(adBusy||!cfg.adsOn||!me)return;
+ const lim=+cfg.adDailyLimit||5;
+ if(adUsed()>=lim){SND.err();return toast("Daily ad limit reached. Come back tomorrow")}
+ adBusy=true;
+ try{
+  const order=cfg.adOrder=="Monetag first"?["monetag","adsgram"]:["adsgram","monetag"];let ok=false;
+  try{for(const net of order){ok=await showNet(net);if(ok)break}}catch(e){}
+  if(!ok){SND.err();return toast("No ad available right now. Please try again later")}
+  const r=+cfg.adReward||0.01,day=todayKey(),inc=firebase.firestore.FieldValue.increment;
+  const upd={balance:inc(r),adTotal:inc(1),adDay:day};
+  if(me.adDay!=day)upd.adCount=1;else upd.adCount=inc(1);
+  try{await ref.update(upd);SND.collect();toast("Bonus added: $"+f(r))}catch(e){SND.err();toast("Could not add bonus. Try again")}
+ }finally{adBusy=false;updAd()}}
+let feed=[];
+let tkList=[],tkIdx=0,tkTimer=null,tkHash="";
+const TK_COL=["#0a56a8","#1f9d55","#c2410c","#7c3aed","#db2777","#0891b2","#b45309","#4f46e5","#be123c","#047857"];
+const TK_NAMES=["Rahim","Karim","Sumon","Nasrin","Tania","Rubel","Mitu","Sajib","Arif","Jannat","Farhan","Shila","Imran","Rima","Tanvir","Sabbir","Mou","Hasan","Nusrat","Rakib","Sohel","Lima","Jahid","Popy","Anik","Sadia","Masud","Rumana","Shuvo","Ripa"];
+const TK_METH=["bKash","Nagad","Rocket","USDT","Binance"];
+const rnd=n=>Math.floor(Math.random()*n),pick=a=>a[rnd(a.length)];
+function tkName(){const n=pick(TK_NAMES);return n.slice(0,2)+"***"}
+function tkColOf(s){let h=0;String(s).split("").forEach(c=>h=(h*31+c.charCodeAt(0))>>>0);return TK_COL[h%TK_COL.length]}
+function tkDemo(){const out=[];
+ for(let i=0;i<10;i++){const n=tkName(),r=Math.random(),col=pick(TK_COL),ic=n[0].toUpperCase();
+  if(r<.4)out.push({ic,col,t:esc(n)+" completed a task",a:+(0.01+Math.random()*0.4).toFixed(2)});
+  else if(r<.7)out.push({ic,col,t:esc(n)+" withdrew via "+pick(TK_METH),a:+(5+Math.random()*(Math.random()<.2?250:60)).toFixed(2)});
+  else out.push({ic,col,t:esc(n)+" deposited",a:+(5+Math.random()*(Math.random()<.2?300:80)).toFixed(2)})}
+ return out}
+function tickItems(){const real=[],it=[];
+ feed.slice(0,15).forEach(e=>{const n=String(e.n||"User"),ic=esc([...n][0]||"U").toUpperCase(),col=tkColOf(n);
+  real.push(e.t=="wd"?{ic,col,t:esc(e.n)+" withdrew via "+esc(e.m),a:e.a}:e.t=="dep"?{ic,col,t:esc(e.n)+" deposited",a:e.a}:{ic,col,t:esc(e.n)+" completed a task",a:e.a})});
+ const demo=cfg.tickerDemo===false?[]:tkDemo();
+ for(let i=0;i<Math.max(real.length,demo.length);i++){if(real[i])it.push(real[i]);if(demo[i])it.push(demo[i])}
+ String(cfg.tickerText||"").split("\n").map(x=>x.trim()).filter(Boolean).forEach(x=>it.push({ic:"📢",col:"#566878",t:esc(x)}));
+ it.push({ic:"🎁",col:"#1f9d55",t:"New members get a $"+f(cfg.welcomeBonus)+" welcome bonus"});return it}
+function tkRow(o){const a=+o.a,big=a>100;
+ return `<span class="tkav" style="background:${o.col}">${o.ic}</span><span class="tktx">${o.t}</span>${o.a!=null?`<span class="tkamt${big?" big":""}"><i>$</i>${f(a)}</span>`:""}`}
+function tkShow(){const i=$("tickin");if(!i||!tkList.length)return;i.innerHTML=tkRow(tkList[tkIdx%tkList.length]);
+ i.style.animation="none";void i.offsetWidth;i.style.animation=""}
+function stepTick(){if(tkList.length<2)return;tkIdx++;if(tkIdx>=tkList.length){tkIdx=0;tkList=tickItems()}tkShow()}
+function renderTick(){const t=$("tick"),i=$("tickin");if(!t||!i)return;
+ const real=JSON.stringify([feed.slice(0,15),cfg.tickerText,cfg.tickerDemo,cfg.welcomeBonus]);
+ if(real!=tkHash){tkHash=real;tkList=tickItems();if(!tkList.length){t.style.display="none";return}if(tkIdx>=tkList.length)tkIdx=0;tkShow()}
+ t.style.display="block";
+ if(!tkTimer)tkTimer=setInterval(stepTick,3600)}
+function renderPay(){const l=$("payl"),h=$("payh");if(!l)return;const w=feed.filter(e=>e.t=="wd").slice(0,10);h.style.display=w.length?"block":"none";
+ l.innerHTML=w.map(e=>`<div class="card" style="display:flex;justify-content:space-between;gap:8px"><div><b>${esc(e.n)}</b><div class="mute">${esc(e.m)} · ${new Date(e.at).toLocaleDateString()}</div></div><b style="color:var(--blue)">$${f(e.a)}</b></div>`).join("")}
+function loadFeed(){db.collection("config").doc("feed").onSnapshot(d=>{feed=(d.exists&&d.data().list)||[];renderTick();renderPay()},()=>{});setInterval(renderTick,5000)}
 let dreg="Bangladesh",wreg="Bangladesh",isNew=false,pendW=false,AC;
 let SON=true;try{SON=localStorage.getItem("snd")!="0"}catch(e){}
 function ac(){try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state=="suspended")AC.resume()}catch(e){}return AC}
@@ -223,7 +295,7 @@ async function init(){
  db.collection("submissions").where("uid","==",uid).onSnapshot(q=>{subs={};q.docs.forEach(d=>subs[d.data().taskId]=d.data().status);renderTasks()});
  db.collection("withdrawals").where("uid","==",uid).onSnapshot(q=>{$("hist").innerHTML=q.docs.map(d=>d.data()).sort((a,b)=>b.at-a.at).map(w=>`<div class="card row" style="margin-bottom:6px;padding:10px"><span>$${f(w.amount)} · ${w.method||""}</span><span class="mute">${w.status}</span></div>`).join("")||'<div class="mute">No withdrawals yet</div>'});
  db.collection("deposits").where("uid","==",uid).onSnapshot(q=>{$("dhist").innerHTML=q.docs.map(d=>d.data()).sort((a,b)=>b.at-a.at).map(w=>`<div class="card row" style="margin-bottom:6px;padding:10px"><span>$${f(w.amount)} · ${w.method||""}</span><span class="mute">${w.status}</span></div>`).join("")||'<div class="mute">No deposits yet</div>'});
- setInterval(render,5000);render();if(isNew)showWelcome();loadPol();
+ setInterval(render,5000);render();if(isNew)showWelcome();loadPol();loadAds();setInterval(loadAds,4000);loadFeed();
 }
 function img(m){return m.img?`<div class="img" style="background-image:url('${m.img}')"></div>`:`<div class="img" style="background:linear-gradient(160deg,#f3f6fa,${m.color}55)"><svg viewBox="0 0 120 50" width="70" fill="none" stroke="${m.color}" stroke-width="3"><path d="M8 34h104M16 34l8-16c2-3 4-4 8-4h40c4 0 6 1 9 4l11 12 8 2v2"/><circle cx="34" cy="36" r="7" fill="#fff"/><circle cx="88" cy="36" r="7" fill="#fff"/></svg></div>`}
 function render(){if(!me)return;
@@ -266,9 +338,9 @@ function renderTasks(){const v=Object.values(subs),c=[tasks.filter(av).length,v.
  const list=tasks.filter(t=>tf=="Available"?av(t):tf=="In review"?subs[t.id]=="pending":subs[t.id]=="approved");
  $("tasks").innerHTML=`<div class="tri">${n.map((x,i)=>`<div><b>${c[i]}</b><span>${x}</span></div>`).join("")}</div>
  <div class="tabs">${n.map(x=>`<a class="${x==tf?"on":""}" onclick="setTf('${x}')">${x}</a>`).join("")}</div><div class="mute" style="margin:10px 0">${list.length} tasks</div>`+
- (list.length?list.map(t=>`<div class="card" style="display:flex;gap:12px"><div style="flex:none;width:40px;height:40px;border-radius:50%;background:var(--bl);color:var(--blue);display:flex;align-items:center;justify-content:center"><svg class="ic"><use href="#i-list"/></svg></div><div style="flex:1"><b>${t.title}</b><div class="mute" style="margin:2px 0 6px">${t.desc||""}</div><b style="color:var(--blue)">+$${f(t.reward)}</b>${t.slots!=null?` <span class="mute">· ${t.slots} left</span>`:""}
+ (list.length?list.map(t=>`<div class="card" style="display:flex;gap:12px"><div style="flex:none;width:40px;height:40px;border-radius:50%;background:var(--bl);color:var(--blue);display:flex;align-items:center;justify-content:center"><svg class="ic"><use href="#i-list"/></svg></div><div style="flex:1"><b>${esc(t.title)}</b><div class="mute" style="margin:2px 0 6px">${esc(t.desc||"")}</div><b style="color:var(--blue)">+$${f(t.reward)}</b>${t.slots!=null?` <span class="mute">· ${t.slots} left</span>`:""}
   <button class="w" style="margin-top:8px;padding:8px" ${subs[t.id]&&subs[t.id]!="rejected"?"disabled":""} onclick="doTask('${t.id}')">${subs[t.id]=="approved"?"Completed":subs[t.id]=="pending"?"In review":"Start"}</button></div></div>`).join(""):`<div class="mute">Nothing here yet.</div>`)}
-async function doTask(id){const t=tasks.find(x=>x.id==id);if(t.url)(tg?tg.openLink(t.url):open(t.url));
+async function doTask(id){const t=tasks.find(x=>x.id==id);if(/^https?:\/\//i.test(t.url||""))(tg?tg.openLink(t.url):open(t.url));
  await db.collection("submissions").doc(uid+"_"+id).set({uid,name:me.name,taskId:id,title:t.title,reward:t.reward,status:"pending",at:Date.now()});SND.ok();toast("Submitted for review")}
 function renderDm(){const e=$("dm");if(!e)return;$("dseg").innerHTML=seg(dreg,"dreg","dmi=null;renderDm()");
  const L=dms.map((m,i)=>[m,i]).filter(x=>reg(x[0])==dreg);
@@ -304,7 +376,7 @@ async function withdraw(){const m=wms[wm];if(!m||reg(m)!=wreg){SND.err();return 
 const av=t=>!subs[t.id]||subs[t.id]=="rejected";
 function calcT(){$("ntc").textContent="Cost: $"+f((+$("ntr").value||0)*(+$("nts").value||0))}
 async function submitTask(){const t=$("ntt").value.trim(),r=+$("ntr").value,n=Math.floor(+$("nts").value),c=+(r*n).toFixed(6);
- if(!t||!(r>0)||!(n>0))return toast("Fill title, reward, users");
+ if(!t||!(r>0)||!(n>0))return toast("Fill title, reward, users");const mn=+cfg.minTaskReward||.01;if(r<mn){SND.err();return toast("Minimum reward is $"+mn.toFixed(2)+" per user")}
  try{await db.runTransaction(async tx=>{const sn=await tx.get(ref);if(sn.data().balance<c)throw 1;tx.update(ref,{balance:+(sn.data().balance-c).toFixed(6)});tx.set(db.collection("taskReq").doc(),{uid,name:me.name,title:t,desc:$("ntd").value,url:$("ntu").value.trim(),reward:r,slots:n,cost:c,status:"pending",at:Date.now()})});
   ["ntt","ntd","ntu","ntr","nts"].forEach(i=>$(i).value="");$("ntc").textContent="";SND.ok();toast("Task sent for review");go("tasks")}catch(e){toast("Insufficient balance")}}
 function share(){const l=`https://t.me/${BOT}?startapp=${me.code}`,u="https://t.me/share/url?url="+encodeURIComponent(l)+"&text="+encodeURIComponent("Join Torqo and start free car mining!");tg?tg.openTelegramLink(u):open(u)}
