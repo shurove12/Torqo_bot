@@ -2,16 +2,17 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<script src='https://libtl.com/sdk.js' data-zone='12163774' data-sdk='show_12163774'></script>
+<script async src='https://libtl.com/sdk.js' data-zone='12163774' data-sdk='show_12163774'></script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Torqo - Car Mining</title>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <style>
 :root{--bg:#f4f8fc;--card:#fff;--ink:#0f1f2e;--mute:#566878;--blue:#0a56a8;--bl:#e1effc;--bd:#b9d2ea;--gr:#e2f4e7;--line:#dfe6ee}
-*{box-sizing:border-box;margin:0;font-family:'Plus Jakarta Sans',sans-serif;-webkit-tap-highlight-color:transparent}
+*{box-sizing:border-box;margin:0;font-family:'Plus Jakarta Sans',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;-webkit-tap-highlight-color:transparent}
 body{background:var(--bg);color:var(--ink);padding:16px 12px 100px;max-width:560px;margin:auto;font-size:14px}
 h1{font-size:24px;font-weight:800;} h2{font-size:20px;font-weight:800;margin:20px 0 12px} h3{font-size:16px;font-weight:700;margin:16px 0 8px} h4{font-size:15px;font-weight:700;margin:6px 0 2px}
 .mute{color:var(--mute);font-size:12px}.sm{font-size:12px}.row{display:flex;justify-content:space-between;align-items:center}
@@ -73,7 +74,9 @@ input,select{width:100%;padding:12px;border:1px solid var(--bd);border-radius:14
 <section class="pg" id="p-tasks">
  <div class="crumb"><svg class="ic"><use href="#i-list"/></svg>TORQO / REWARDS</div><h1 style="margin:16px 0 0;font-size:28px">Task hub</h1><button class="w" style="margin-top:10px" onclick="go('newtask')">+ Create task</button>
  <div id="popcard" class="card" style="display:none;margin-top:10px"></div>
+ <div id="bnr2" style="margin-top:10px"></div>
  <div id="tasks" style="margin-top:10px"></div>
+ <div id="bnr1" style="margin-top:10px"></div>
  <h3 id="payh" style="display:none;margin-top:18px">Recent payouts</h3><div id="payl"></div>
 </section>
 
@@ -171,7 +174,7 @@ const FB={
 };
 const BOT="Torqo_bot";
 firebase.initializeApp(FB);
-const db=firebase.firestore();
+const db=firebase.firestore();db.settings({experimentalAutoDetectLongPolling:true,merge:true});db.enablePersistence({synchronizeTabs:true}).catch(()=>{});
 const tg=window.Telegram&&Telegram.WebApp;if(tg){tg.ready();tg.expand()}
 const tu=(tg&&tg.initDataUnsafe&&tg.initDataUnsafe.user)||{id:"demo",first_name:"Demo"};
 const uid=String(tu.id);const ref=db.collection("users").doc(uid);
@@ -189,13 +192,17 @@ let adLoaded={},adBusy=false;
 function loadAds(){const add=(k,src,at)=>{if(adLoaded[k]||(at&&at["data-zone"]&&document.querySelector('script[data-zone="'+at["data-zone"]+'"]')))return;adLoaded[k]=1;const s=document.createElement("script");s.src=src;s.async=true;Object.keys(at||{}).forEach(a=>s.setAttribute(a,at[a]));document.head.appendChild(s)};
  if(cfg.adsOn&&cfg.adsgramBlock)add("ag","https://sad.adsgram.ai/js/sad.min.js");
  const z=String(cfg.monetagZone||"").replace(/\W/g,"");if(cfg.adsOn&&z)add("mt"+z,"https://libtl.com/sdk.js",{"data-zone":z,"data-sdk":"show_"+z});
+ const okU=u=>/^https:\/\/[\w.-]+\/[^\s"'<>]+$/.test(String(u||""));
+ if(cfg.adsOn&&okU(cfg.adsterraSocial))add("as_soc",cfg.adsterraSocial);
+ if(cfg.adsOn&&okU(cfg.adsterraPop))add("as_pop",cfg.adsterraPop);
+ if(tasks.some(t=>t.net=="adsgram"))add("ag","https://sad.adsgram.ai/js/sad.min.js");
  if(cfg.adsOn&&typeof window["show_"+MZ]!=="function"&&(adLoaded.fb||0)<3){adLoaded.fb=(adLoaded.fb||0)+1;const s=document.createElement("script");s.src="https://libtl.com/sdk.js";s.async=true;s.setAttribute("data-zone",MZ);s.setAttribute("data-sdk","show_"+MZ);document.head.appendChild(s)}
  updAd()}
 function todayKey(){return new Date(Date.now()+6*3600*1000).toISOString().slice(0,10)}
 function adUsed(){return me&&me.adDay==todayKey()?(+me.adCount||0):0}
 function updAd(){if($("mtr"))$("mtr").textContent=f(cfg.minTaskReward||.01);
  const n=adUsed(),lim=+cfg.adDailyLimit||5,left=Math.max(lim-n,0);
- renderPop();["adcard"].forEach(id=>{const e=$(id);if(!e)return;e.style.display=cfg.adsOn?"block":"none";if(!cfg.adsOn||adBusy)return;
+ renderPop();renderBanners();["adcard"].forEach(id=>{const e=$(id);if(!e)return;e.style.display=cfg.adsOn?"block":"none";if(!cfg.adsOn||adBusy)return;
   e.innerHTML=`<b>Watch Ad to Boost</b><div class="mute">Optional. Earn $${f(cfg.adReward)} per ad · ${left} of ${lim} left today</div><button onclick="watchAd()" ${left<=0?"disabled":""}>Watch Ad to Boost (+$${f(cfg.adReward)})</button><div class="mute" style="margin-top:6px;font-size:11px">Ads are optional. Every other feature works without watching ads.</div>`})}
 function showNet(net){
  if(net=="adsgram"){if(!cfg.adsgramBlock||!window.Adsgram)return Promise.resolve(false);try{return window.Adsgram.init({blockId:String(cfg.adsgramBlock)}).show().then(r=>!!(r&&r.done)).catch(()=>false)}catch(e){return Promise.resolve(false)}}
@@ -279,11 +286,13 @@ function openWd(){closeW();go("withdraw");renderWm()}
 go("miners");
 function pending(m){const to=Math.min(Date.now(),m.start+m.days*864e5);return Math.max(0,(to-m.last)/864e5*m.daily)}
 function genCode(){return (cfg.codePrefix||"TQ")+Math.random().toString(36).slice(2,8).toUpperCase()}
+const wt=(pr,ms)=>Promise.race([pr,new Promise((_,rj)=>setTimeout(()=>rj(new Error("timeout")),ms))]);
+function netBox(){if($("netw")||me)return;const d=document.createElement("div");d.id="netw";d.style.cssText="position:fixed;left:12px;right:12px;bottom:90px;z-index:99;background:#0f2a44;color:#fff;border-radius:14px;padding:12px 14px;font-size:13px;display:flex;gap:10px;align-items:center";d.innerHTML='<span style="flex:1">Slow or blocked network. Still trying to connect…</span><button onclick="location.reload()" style="background:#fff;color:#0f2a44;border:0;border-radius:10px;padding:8px 12px;font-weight:700">Retry</button>';document.body.appendChild(d)}
+setTimeout(netBox,10000);
 async function init(){
- try{const c=await db.collection("config").doc("app").get();if(c.exists)cfg={...cfg,...c.data()};
-  const m=await db.collection("config").doc("miners").get();if(m.exists&&m.data().list)miners=m.data().list;
-  const w=await db.collection("config").doc("withdraw").get();if(w.exists&&w.data().list)wms=w.data().list;const dd=await db.collection("config").doc("deposit").get();if(dd.exists&&dd.data().list)dms=dd.data().list}catch(e){}
- const s=await ref.get();
+ try{const R=await Promise.all(["app","miners","withdraw","deposit"].map(k=>wt(db.collection("config").doc(k).get(),10000).catch(()=>null)));
+  const [c,m,w,dd]=R;if(c&&c.exists)cfg={...cfg,...c.data()};if(m&&m.exists&&m.data().list)miners=m.data().list;if(w&&w.exists&&w.data().list)wms=w.data().list;if(dd&&dd.exists&&dd.data().list)dms=dd.data().list}catch(e){}
+ let s;try{s=await wt(ref.get(),20000)}catch(e){netBox();return}
  if(!s.exists){
   const p=new URLSearchParams(location.search),sp=(tg&&tg.initDataUnsafe&&tg.initDataUnsafe.start_param)||p.get("startapp")||"",now=Date.now(),m0=miners[0];
   me={name:tu.first_name||"User",username:tu.username||"",balance:+cfg.welcomeBonus,totalMined:0,refBy:sp,refUid:"",refCount:0,refQualified:0,refEarned:0,code:genCode(),created:now,banned:false,
@@ -291,6 +300,7 @@ async function init(){
   await ref.set(me);isNew=true;
   if(sp){try{const q=await db.collection("users").where("code","==",sp).limit(1).get();if(!q.empty&&q.docs[0].id!=uid){me.refUid=q.docs[0].id;await ref.update({refUid:me.refUid});await q.docs[0].ref.update({refCount:firebase.firestore.FieldValue.increment(1)})}}catch(e){}}
  }else me=s.data();
+ {const nb=$("netw");if(nb)nb.remove()}
  ref.onSnapshot(d=>{if(d.exists){me=d.data();render()}});
  ["app","miners","withdraw","deposit"].forEach(k=>db.collection("config").doc(k).onSnapshot(d=>{if(!d.exists)return;const x=d.data();if(k=="app")cfg={...cfg,...x};if(k=="miners"&&x.list)miners=x.list;if(k=="withdraw"&&x.list)wms=x.list;if(k=="deposit"&&x.list)dms=x.list;render();renderWm();renderDm()}));
  db.collection("tasks").where("active","==",true).onSnapshot(q=>{tasks=q.docs.map(d=>({id:d.id,...d.data()}));renderTasks()});
@@ -369,12 +379,65 @@ function showInterstitial(){if(interDone||!cfg.adsOn||adBusy||popBusy)return;
  const day=todayKey();if(st.d!=day)st={d:day,n:0};if(st.n>=max)return;
  interDone=true;st.n++;try{localStorage.setItem("inter",JSON.stringify(st))}catch(e){}
  try{Promise.resolve(fn({type:"inApp",inAppSettings:{frequency:max,capping:24,interval:60,timeout:5,everyPage:false}})).catch(()=>{})}catch(e){}}
-function renderTasks(){const v=Object.values(subs),c=[tasks.filter(av).length,v.filter(s=>s=="pending").length,v.filter(s=>s=="approved").length],n=["Available","In review","Completed"];
- const list=tasks.filter(t=>tf=="Available"?av(t):tf=="In review"?subs[t.id]=="pending":subs[t.id]=="approved");
+const TL={app:"App task",web:"Website task",ad:"Ad task"};
+let tkRun=null,tkBusy=false;try{tkRun=JSON.parse(localStorage.getItem("tkRun")||"null");if(tkRun&&Date.now()-tkRun.at>36e5)tkRun=null}catch(e){}
+function tkSave(){try{tkRun?localStorage.setItem("tkRun",JSON.stringify(tkRun)):localStorage.removeItem("tkRun")}catch(e){}}
+const isAuto=t=>!!t.type&&!t.review,rhMs=t=>(+t.repeatHours||0)*36e5,tdAt=t=>+(me&&me.td&&me.td[t.id])||0;
+function avl(t){if(isAuto(t)){const a=tdAt(t);return !a||(rhMs(t)>0&&Date.now()>=a+rhMs(t))}return av(t)}
+function leftTxt(t){const ms=tdAt(t)+rhMs(t)-Date.now();if(rhMs(t)<=0||ms<=0)return"Completed";const m=Math.ceil(ms/6e4);return"Available again in "+(m>=60?Math.floor(m/60)+"h "+m%60+"m":m+"m")}
+function taskBtn(t){const run=tkRun&&tkRun.id==t.id;
+ if(t.type){
+  if(isAuto(t)?!avl(t):(subs[t.id]&&subs[t.id]!="rejected"))return`<button class="w" style="margin-top:8px;padding:8px" disabled>${isAuto(t)?leftTxt(t):subs[t.id]=="approved"?"Completed":"In review"}</button>`;
+  if(run)return`<div class="mute" style="margin-top:6px">Stay on the page for at least ${+t.minStay||0}s, then come back and tap Claim.</div><button class="w" style="margin-top:8px;padding:8px" onclick="claimTask()">I'm back, Claim</button>`;
+  return`<button class="w" style="margin-top:8px;padding:8px" onclick="startTask('${t.id}')">Start</button>`}
+ return`<button class="w" style="margin-top:8px;padding:8px" ${subs[t.id]&&subs[t.id]!="rejected"?"disabled":""} onclick="doTask('${t.id}')">${subs[t.id]=="approved"?"Completed":subs[t.id]=="pending"?"In review":"Start"}</button>`}
+function taskMeta(t){if(!t.type)return"";const x=[TL[t.type]||"Task"];if(+t.minStay>0&&(t.net||"link")=="link")x.push("Stay "+(+t.minStay)+"s");if(rhMs(t)>0)x.push("Repeats every "+(+t.repeatHours)+"h");return`<div class="mute" style="font-size:11px;margin-bottom:4px">${x.join(" · ")}</div>`}
+function renderTasks(){const v=Object.values(subs),
+ c=[tasks.filter(avl).length,v.filter(s=>s=="pending").length,v.filter(s=>s=="approved").length+tasks.filter(t=>isAuto(t)&&!avl(t)).length],n=["Available","In review","Completed"];
+ const list=tasks.filter(t=>tf=="Available"?avl(t):tf=="In review"?(!isAuto(t)&&subs[t.id]=="pending"):(isAuto(t)?!avl(t):subs[t.id]=="approved"));
  $("tasks").innerHTML=`<div class="tri">${n.map((x,i)=>`<div><b>${c[i]}</b><span>${x}</span></div>`).join("")}</div>
  <div class="tabs">${n.map(x=>`<a class="${x==tf?"on":""}" onclick="setTf('${x}')">${x}</a>`).join("")}</div><div class="mute" style="margin:10px 0">${list.length} tasks</div>`+
- (list.length?list.map(t=>`<div class="card" style="display:flex;gap:12px"><div style="flex:none;width:40px;height:40px;border-radius:50%;background:var(--bl);color:var(--blue);display:flex;align-items:center;justify-content:center"><svg class="ic"><use href="#i-list"/></svg></div><div style="flex:1"><b>${esc(t.title)}</b><div class="mute" style="margin:2px 0 6px">${esc(t.desc||"")}</div><b style="color:var(--blue)">+$${f(t.reward)}</b>${t.slots!=null?` <span class="mute">· ${t.slots} left</span>`:""}
-  <button class="w" style="margin-top:8px;padding:8px" ${subs[t.id]&&subs[t.id]!="rejected"?"disabled":""} onclick="doTask('${t.id}')">${subs[t.id]=="approved"?"Completed":subs[t.id]=="pending"?"In review":"Start"}</button></div></div>`).join(""):`<div class="mute">Nothing here yet.</div>`)}
+ (list.length?list.map(t=>`<div class="card" style="display:flex;gap:12px"><div style="flex:none;width:40px;height:40px;border-radius:50%;background:var(--bl);color:var(--blue);display:flex;align-items:center;justify-content:center"><svg class="ic"><use href="#i-list"/></svg></div><div style="flex:1;min-width:0">${taskMeta(t)}<b>${esc(t.title)}</b><div class="mute" style="margin:2px 0 6px">${esc(t.desc||"")}</div><b style="color:var(--blue)">+$${f(t.reward)}</b>${!t.type&&t.slots!=null?` <span class="mute">· ${t.slots} left</span>`:""}
+  ${taskBtn(t)}</div></div>`).join(""):`<div class="mute">Nothing here yet.</div>`)}
+async function giveTask(t){const r=+t.reward||0,inc=firebase.firestore.FieldValue.increment;
+ await ref.update({balance:inc(r),["td."+t.id]:Date.now()});SND.collect();toast("Task complete! +$"+f(r))}
+async function startTask(id){const t=tasks.find(x=>x.id==id);if(!t||tkBusy||!avl(t))return;
+ if(t.type=="ad"&&(t.net=="monetag"||t.net=="adsgram"))return runAdTask(t);
+ if(!/^https?:\/\//i.test(t.url||"")){SND.err();return toast("Task link is missing")}
+ tkRun={id,at:Date.now(),hid:false};tkSave();
+ try{tg?tg.openLink(t.url):open(t.url)}catch(e){open(t.url)}
+ renderTasks();toast("Stay on the page for at least "+(+t.minStay||0)+"s, then come back and tap Claim.",5000)}
+async function evalRun(){if(!tkRun||tkBusy)return;const t=tasks.find(x=>x.id==tkRun.id);
+ if(!t){tkRun=null;tkSave();return renderTasks()}
+ if(!avl(t)){tkRun=null;tkSave();return renderTasks()}
+ const secs=Math.floor((Date.now()-tkRun.at)/1000),min=+t.minStay||0;
+ if(secs<min){tkRun=null;tkSave();SND.err();renderTasks();return toast("You stayed only "+secs+"s. At least "+min+"s is required, so no reward was given.",6000)}
+ tkBusy=true;
+ try{
+  if(t.review){await db.collection("submissions").doc(uid+"_"+t.id).set({uid,name:me.name,taskId:t.id,title:t.title,reward:t.reward,status:"pending",at:Date.now()});SND.ok();toast("Stay time complete. Submitted for review")}
+  else await giveTask(t);
+  tkRun=null;tkSave();
+ }catch(e){SND.err();toast("Could not save. Tap Claim again")}
+ finally{tkBusy=false;renderTasks()}}
+function claimTask(){evalRun()}
+async function runAdTask(t){if(tkBusy)return;tkBusy=true;
+ try{
+  let ok=false;
+  if(t.net=="monetag"){const fn=window["show_"+MZ];if(typeof fn!=="function"){SND.err();return toast("Ad is loading. Please wait a few seconds and try again.")}try{await fn("pop");ok=true}catch(e){}}
+  else{if(!window.Adsgram||!t.block){SND.err();return toast("Ad is loading. Please try again in a moment.")}try{const r=await window.Adsgram.init({blockId:String(t.block)}).show();ok=!!(r&&r.done)}catch(e){}}
+  if(!ok){SND.err();return toast("Ad was not completed, so no reward was given.")}
+  await giveTask(t);
+ }catch(e){SND.err();toast("Could not save. Try again")}
+ finally{tkBusy=false;renderTasks()}}
+document.addEventListener("visibilitychange",()=>{if(!tkRun)return;if(document.hidden){tkRun.hid=true;tkSave()}else if(tkRun.hid)setTimeout(evalRun,400)});
+try{tg&&tg.onEvent&&(tg.onEvent("deactivated",()=>{if(tkRun){tkRun.hid=true;tkSave()}}),tg.onEvent("activated",()=>{if(tkRun&&tkRun.hid)setTimeout(evalRun,400)}))}catch(e){}
+function ifr(id,code,h){const e=$(id);if(!e)return;const c=String(code||"").trim();
+ if(!cfg.adsOn||!c){e.innerHTML="";e.dataset.h="";return}
+ const key=c+"|"+h;if(e.dataset.h==key)return;e.dataset.h=key;e.innerHTML="";
+ const fr=document.createElement("iframe");fr.setAttribute("sandbox","allow-scripts allow-popups allow-popups-to-escape-sandbox");
+ fr.style.cssText="width:100%;border:0;display:block;background:transparent;height:"+(+h||250)+"px";
+ fr.srcdoc='<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"></head><body style="margin:0;overflow:hidden">'+c+'</body></html>';e.appendChild(fr)}
+function renderBanners(){ifr("bnr1",cfg.adsterraBanner,cfg.adsterraBannerH||250);ifr("bnr2",cfg.adsterraNative,cfg.adsterraNativeH||280)}
 async function doTask(id){const t=tasks.find(x=>x.id==id);if(/^https?:\/\//i.test(t.url||""))(tg?tg.openLink(t.url):open(t.url));
  await db.collection("submissions").doc(uid+"_"+id).set({uid,name:me.name,taskId:id,title:t.title,reward:t.reward,status:"pending",at:Date.now()});SND.ok();toast("Submitted for review")}
 function renderDm(){const e=$("dm");if(!e)return;$("dseg").innerHTML=seg(dreg,"dreg","dmi=null;renderDm()");
